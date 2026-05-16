@@ -1,0 +1,343 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA0000000000000000000101 /* MacMediaToolsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000201 /* MacMediaToolsApp.swift */; };
+		AA0000000000000000000102 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000202 /* RootView.swift */; };
+		AA0000000000000000000103 /* ToolFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000203 /* ToolFeature.swift */; };
+		AA0000000000000000000104 /* OpenPanelButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000204 /* OpenPanelButton.swift */; };
+		AA0000000000000000000105 /* VideoToolkit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000205 /* VideoToolkit.swift */; };
+		AA0000000000000000000106 /* FileHasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000206 /* FileHasher.swift */; };
+		AA0000000000000000000107 /* FolderScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000207 /* FolderScanner.swift */; };
+		AA0000000000000000000108 /* VideoResizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000208 /* VideoResizeView.swift */; };
+		AA0000000000000000000109 /* CropOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000209 /* CropOverlay.swift */; };
+		AA000000000000000000010A /* VideoCropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020A /* VideoCropView.swift */; };
+		AA000000000000000000010B /* VideoConcatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020B /* VideoConcatView.swift */; };
+		AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020C /* DuplicatePhotoView.swift */; };
+		AA000000000000000000010D /* DuplicateVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020D /* DuplicateVideoView.swift */; };
+		AA0000000000000000000110 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000301 /* Assets.xcassets */; };
+
+		AA0000000000000000000121 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000401 /* AVFoundation.framework */; };
+		AA0000000000000000000122 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000402 /* AVKit.framework */; };
+		AA0000000000000000000123 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000403 /* AppKit.framework */; };
+		AA0000000000000000000124 /* CryptoKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000404 /* CryptoKit.framework */; };
+		AA0000000000000000000125 /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000405 /* UniformTypeIdentifiers.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA0000000000000000000001 /* MacMediaTools.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacMediaTools.app; sourceTree = BUILT_PRODUCTS_DIR; };
+
+		AA0000000000000000000201 /* MacMediaToolsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaToolsApp.swift; sourceTree = "<group>"; };
+		AA0000000000000000000202 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000203 /* ToolFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolFeature.swift; sourceTree = "<group>"; };
+		AA0000000000000000000204 /* OpenPanelButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenPanelButton.swift; sourceTree = "<group>"; };
+		AA0000000000000000000205 /* VideoToolkit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoToolkit.swift; sourceTree = "<group>"; };
+		AA0000000000000000000206 /* FileHasher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHasher.swift; sourceTree = "<group>"; };
+		AA0000000000000000000207 /* FolderScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderScanner.swift; sourceTree = "<group>"; };
+		AA0000000000000000000208 /* VideoResizeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoResizeView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000209 /* CropOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropOverlay.swift; sourceTree = "<group>"; };
+		AA000000000000000000020A /* VideoCropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCropView.swift; sourceTree = "<group>"; };
+		AA000000000000000000020B /* VideoConcatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoConcatView.swift; sourceTree = "<group>"; };
+		AA000000000000000000020C /* DuplicatePhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatePhotoView.swift; sourceTree = "<group>"; };
+		AA000000000000000000020D /* DuplicateVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoView.swift; sourceTree = "<group>"; };
+
+		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+
+		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000402 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000403 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000404 /* CryptoKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CryptoKit.framework; path = System/Library/Frameworks/CryptoKit.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000405 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA0000000000000000000032 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000121 /* AVFoundation.framework in Frameworks */,
+				AA0000000000000000000122 /* AVKit.framework in Frameworks */,
+				AA0000000000000000000123 /* AppKit.framework in Frameworks */,
+				AA0000000000000000000124 /* CryptoKit.framework in Frameworks */,
+				AA0000000000000000000125 /* UniformTypeIdentifiers.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000010 /* MacMediaTools */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000012 /* MacMediaTools */,
+				AA0000000000000000000013 /* Frameworks */,
+				AA0000000000000000000011 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+
+		AA0000000000000000000011 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000001 /* MacMediaTools.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+
+		AA0000000000000000000012 /* MacMediaTools */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000302 /* Info.plist */,
+				AA0000000000000000000301 /* Assets.xcassets */,
+				AA000000000000000000005A /* Models */,
+				AA000000000000000000005B /* Components */,
+				AA000000000000000000005C /* Services */,
+				AA000000000000000000005D /* Features */,
+				AA0000000000000000000201 /* MacMediaToolsApp.swift */,
+				AA0000000000000000000202 /* RootView.swift */,
+			);
+			path = MacMediaTools;
+			sourceTree = "<group>";
+		};
+
+		AA0000000000000000000013 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000403 /* AppKit.framework */,
+				AA0000000000000000000401 /* AVFoundation.framework */,
+				AA0000000000000000000402 /* AVKit.framework */,
+				AA0000000000000000000404 /* CryptoKit.framework */,
+				AA0000000000000000000405 /* UniformTypeIdentifiers.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+
+		AA000000000000000000005A /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000203 /* ToolFeature.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+
+		AA000000000000000000005B /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000204 /* OpenPanelButton.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+
+		AA000000000000000000005C /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000205 /* VideoToolkit.swift */,
+				AA0000000000000000000206 /* FileHasher.swift */,
+				AA0000000000000000000207 /* FolderScanner.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+
+		AA000000000000000000005D /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000208 /* VideoResizeView.swift */,
+				AA0000000000000000000209 /* CropOverlay.swift */,
+				AA000000000000000000020A /* VideoCropView.swift */,
+				AA000000000000000000020B /* VideoConcatView.swift */,
+				AA000000000000000000020C /* DuplicatePhotoView.swift */,
+				AA000000000000000000020D /* DuplicateVideoView.swift */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA0000000000000000000020 /* MacMediaTools */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000050 /* Build configuration list for PBXNativeTarget "MacMediaTools" */;
+			buildPhases = (
+				AA0000000000000000000030 /* Sources */,
+				AA0000000000000000000031 /* Resources */,
+				AA0000000000000000000032 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacMediaTools;
+			productName = MacMediaTools;
+			productReference = AA0000000000000000000001 /* MacMediaTools.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA0000000000000000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AA0000000000000000000020 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AA0000000000000000000040 /* Build configuration list for PBXProject "MacMediaTools" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = zh-Hans;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				zh-Hans,
+				Base,
+			);
+			mainGroup = AA0000000000000000000010 /* MacMediaTools */;
+			productRefGroup = AA0000000000000000000011 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA0000000000000000000020 /* MacMediaTools */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA0000000000000000000031 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000110 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA0000000000000000000030 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000101 /* MacMediaToolsApp.swift in Sources */,
+				AA0000000000000000000102 /* RootView.swift in Sources */,
+				AA0000000000000000000103 /* ToolFeature.swift in Sources */,
+				AA0000000000000000000104 /* OpenPanelButton.swift in Sources */,
+				AA0000000000000000000105 /* VideoToolkit.swift in Sources */,
+				AA0000000000000000000106 /* FileHasher.swift in Sources */,
+				AA0000000000000000000107 /* FolderScanner.swift in Sources */,
+				AA0000000000000000000108 /* VideoResizeView.swift in Sources */,
+				AA0000000000000000000109 /* CropOverlay.swift in Sources */,
+				AA000000000000000000010A /* VideoCropView.swift in Sources */,
+				AA000000000000000000010B /* VideoConcatView.swift in Sources */,
+				AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */,
+				AA000000000000000000010D /* DuplicateVideoView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA0000000000000000000041 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000042 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+
+		AA0000000000000000000051 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = MacMediaTools/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000052 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = MacMediaTools/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA0000000000000000000040 /* Build configuration list for PBXProject "MacMediaTools" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000041 /* Debug */,
+				AA0000000000000000000042 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AA0000000000000000000050 /* Build configuration list for PBXNativeTarget "MacMediaTools" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000051 /* Debug */,
+				AA0000000000000000000052 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AA0000000000000000000000 /* Project object */;
+}
+
