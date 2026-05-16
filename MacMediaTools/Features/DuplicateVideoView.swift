@@ -35,6 +35,7 @@ struct DuplicateVideoView: View {
 					groups = []
 					errorMessage = nil
 				}
+				.disabled(isWorking)
 				Text(folderURL?.path ?? "未选择")
 					.lineLimit(1)
 					.truncationMode(.middle)
@@ -110,41 +111,54 @@ struct DuplicateVideoView: View {
 		totalCount = 0
 		groups = []
 		errorMessage = nil
-		statusText = "扫描中：仅按 时长/大小/分辨率 分组"
-		defer { isWorking = false }
+		statusText = "扫描中：正在读取文件列表…"
 
-		let files = FolderScanner.scanFiles(in: folderURL, allowedExtensions: videoExts)
-		totalCount = files.count
+		let folder = folderURL
+		let exts = videoExts
 
-		var map: [String: (desc: String, urls: [URL])] = [:]
+		Task.detached(priority: .userInitiated) { [folder, exts] in
+			let files = FolderScanner.scanFiles(in: folder, allowedExtensions: exts)
+			await MainActor.run {
+				totalCount = files.count
+				processedCount = 0
+				statusText = "扫描中：仅按 时长/大小/分辨率 分组"
+			}
 
-		for (idx, url) in files.enumerated() {
-			processedCount = idx + 1
+			var map: [String: (desc: String, urls: [URL])] = [:]
 
-			do {
-				let attr = try FileManager.default.attributesOfItem(atPath: url.path)
-				let fileSize = (attr[.size] as? NSNumber)?.int64Value ?? 0
+			for (idx, url) in files.enumerated() {
+				if Task.isCancelled { return }
 
-				let info = try await VideoToolkit.readDisplayInfo(url: url)
-				let durationMs = Int((info.durationSeconds * 1000.0).rounded())
-				let w = Int(info.displaySize.width.rounded())
-				let h = Int(info.displaySize.height.rounded())
+				do {
+					let attr = try FileManager.default.attributesOfItem(atPath: url.path)
+					let fileSize = (attr[.size] as? NSNumber)?.int64Value ?? 0
 
-				let key = "\(durationMs)|\(fileSize)|\(w)x\(h)"
-				let desc = "时长=\(durationMs)ms 大小=\(fileSize)B 分辨率=\(w)x\(h)"
-				map[key, default: (desc: desc, urls: [])].urls.append(url)
-			} catch {
-				// 忽略单个文件错误
+					let info = try await VideoToolkit.readDisplayInfo(url: url)
+					let durationMs = Int((info.durationSeconds * 1000.0).rounded())
+					let w = Int(info.displaySize.width.rounded())
+					let h = Int(info.displaySize.height.rounded())
+
+					let key = "\(durationMs)|\(fileSize)|\(w)x\(h)"
+					let desc = "时长=\(durationMs)ms 大小=\(fileSize)B 分辨率=\(w)x\(h)"
+					map[key, default: (desc: desc, urls: [])].urls.append(url)
+				} catch {
+				}
+
+				if idx % 5 == 0 || idx + 1 == files.count {
+					await MainActor.run { processedCount = idx + 1 }
+				}
+			}
+
+			let dupGroups = map
+				.filter { $0.value.urls.count > 1 }
+				.map { DuplicateVideoGroup(id: $0.key, keyDescription: $0.value.desc, files: $0.value.urls.sorted(by: { $0.path < $1.path })) }
+				.sorted(by: { $0.files.count > $1.files.count })
+
+			await MainActor.run {
+				groups = dupGroups
+				statusText = "完成：共扫描 \(files.count) 个视频，发现 \(groups.count) 组“基本信息重复”"
+				isWorking = false
 			}
 		}
-
-		let dupGroups = map
-			.filter { $0.value.urls.count > 1 }
-			.map { DuplicateVideoGroup(id: $0.key, keyDescription: $0.value.desc, files: $0.value.urls.sorted(by: { $0.path < $1.path })) }
-			.sorted(by: { $0.files.count > $1.files.count })
-
-		groups = dupGroups
-		statusText = "完成：共扫描 \(files.count) 个视频，发现 \(groups.count) 组“基本信息重复”"
 	}
 }
-

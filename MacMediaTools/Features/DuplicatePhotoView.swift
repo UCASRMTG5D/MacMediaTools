@@ -31,6 +31,7 @@ struct DuplicatePhotoView: View {
 					groups = []
 					errorMessage = nil
 				}
+				.disabled(isWorking)
 				Text(folderURL?.path ?? "未选择")
 					.lineLimit(1)
 					.truncationMode(.middle)
@@ -106,33 +107,45 @@ struct DuplicatePhotoView: View {
 		totalCount = 0
 		groups = []
 		errorMessage = nil
-		statusText = "扫描中：将按 SHA256 判定“完全相同文件”"
-		defer {
-			isWorking = false
-		}
+		statusText = "扫描中：正在读取文件列表…"
 
-		let files = FolderScanner.scanFiles(in: folderURL, allowedExtensions: photoExts)
-		totalCount = files.count
+		let folder = folderURL
+		let exts = photoExts
 
-		var map: [String: [URL]] = [:]
+		Task.detached(priority: .userInitiated) { [folder, exts] in
+			let files = FolderScanner.scanFiles(in: folder, allowedExtensions: exts)
+			await MainActor.run {
+				totalCount = files.count
+				processedCount = 0
+				statusText = "扫描中：将按 SHA256 判定“完全相同文件”"
+			}
 
-		for (idx, url) in files.enumerated() {
-			processedCount = idx + 1
-			do {
-				let hash = try FileHasher.sha256(url: url)
-				map[hash, default: []].append(url)
-			} catch {
-				// 忽略单个文件错误
+			var map: [String: [URL]] = [:]
+
+			for (idx, url) in files.enumerated() {
+				if Task.isCancelled { return }
+
+				do {
+					let hash = try FileHasher.sha256(url: url)
+					map[hash, default: []].append(url)
+				} catch {
+				}
+
+				if idx % 10 == 0 || idx + 1 == files.count {
+					await MainActor.run { processedCount = idx + 1 }
+				}
+			}
+
+			let dupGroups = map
+				.filter { $0.value.count > 1 }
+				.map { DuplicatePhotoGroup(id: $0.key, files: $0.value.sorted(by: { $0.path < $1.path })) }
+				.sorted(by: { $0.files.count > $1.files.count })
+
+			await MainActor.run {
+				groups = dupGroups
+				statusText = "完成：共扫描 \(files.count) 张图片，发现 \(groups.count) 组重复"
+				isWorking = false
 			}
 		}
-
-		let dupGroups = map
-			.filter { $0.value.count > 1 }
-			.map { DuplicatePhotoGroup(id: $0.key, files: $0.value.sorted(by: { $0.path < $1.path })) }
-			.sorted(by: { $0.files.count > $1.files.count })
-
-		groups = dupGroups
-		statusText = "完成：共扫描 \(files.count) 张图片，发现 \(groups.count) 组重复"
 	}
 }
-
