@@ -20,6 +20,9 @@
 		AA000000000000000000010B /* VideoConcatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020B /* VideoConcatView.swift */; };
 		AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020C /* DuplicatePhotoView.swift */; };
 		AA000000000000000000010D /* DuplicateVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020D /* DuplicateVideoView.swift */; };
+		AA000000000000000000010E /* VideoDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020E /* VideoDownloader.swift */; };
+		AA000000000000000000010F /* VideoDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020F /* VideoDownloadView.swift */; };
+		AA0000000000000000000111 /* FileCopyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000210 /* FileCopyView.swift */; };
 		AA0000000000000000000110 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000301 /* Assets.xcassets */; };
 
 		AA0000000000000000000121 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000401 /* AVFoundation.framework */; };
@@ -45,6 +48,9 @@
 		AA000000000000000000020B /* VideoConcatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoConcatView.swift; sourceTree = "<group>"; };
 		AA000000000000000000020C /* DuplicatePhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatePhotoView.swift; sourceTree = "<group>"; };
 		AA000000000000000000020D /* DuplicateVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoView.swift; sourceTree = "<group>"; };
+		AA000000000000000000020E /* VideoDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDownloader.swift; sourceTree = "<group>"; };
+		AA000000000000000000020F /* VideoDownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDownloadView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000210 /* FileCopyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCopyView.swift; sourceTree = "<group>"; };
 
 		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -144,6 +150,7 @@
 				AA0000000000000000000205 /* VideoToolkit.swift */,
 				AA0000000000000000000206 /* FileHasher.swift */,
 				AA0000000000000000000207 /* FolderScanner.swift */,
+				AA000000000000000000020E /* VideoDownloader.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -158,6 +165,8 @@
 				AA000000000000000000020B /* VideoConcatView.swift */,
 				AA000000000000000000020C /* DuplicatePhotoView.swift */,
 				AA000000000000000000020D /* DuplicateVideoView.swift */,
+				AA000000000000000000020F /* VideoDownloadView.swift */,
+				AA0000000000000000000210 /* FileCopyView.swift */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -244,6 +253,9 @@
 				AA000000000000000000010B /* VideoConcatView.swift in Sources */,
 				AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */,
 				AA000000000000000000010D /* DuplicateVideoView.swift in Sources */,
+				AA000000000000000000010E /* VideoDownloader.swift in Sources */,
+				AA000000000000000000010F /* VideoDownloadView.swift in Sources */,
+				AA0000000000000000000111 /* FileCopyView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

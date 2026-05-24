@@ -23,6 +23,10 @@ struct RootView: View {
 					DuplicatePhotoView()
 				case .duplicateVideos:
 					DuplicateVideoView()
+				case .videoDownload:
+					VideoDownloadView()
+				case .fileCopy:
+					FileCopyView()
 				case .none:
 					Text("请选择左侧功能")
 				}
