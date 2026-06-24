@@ -145,8 +145,7 @@ struct VideoConcatView: View {
 				}
 				
 				let ext = url.pathExtension.lowercased()
-				let videoExts: Set<String> = ["mp4", "mov", "m4v", "avi", "mkv", "wmv", "flv", "webm"]
-				if videoExts.contains(ext) {
+				if MediaFileExtensions.video.contains(ext) {
 					validVideos.append(url)
 				}
 			}

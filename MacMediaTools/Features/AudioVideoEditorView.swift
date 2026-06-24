@@ -23,6 +23,7 @@ struct AudioVideoEditorView: View {
     @State private var exportProgress: Double = 0
     @State private var outputURL: URL?
     @State private var errorMessage: String?
+    @State private var successMessage: String?
     
     @State private var undoStack: [EditAction] = []
     @State private var redoStack: [EditAction] = []
@@ -308,6 +309,10 @@ struct AudioVideoEditorView: View {
                 Text(errorMessage)
                     .foregroundColor(.red)
             }
+            if let successMessage {
+                Text(successMessage)
+                    .foregroundColor(.green)
+            }
             
             Spacer()
         }
@@ -384,9 +389,9 @@ struct AudioVideoEditorView: View {
             let videoEndTime = videoTrack.duration / videoSpeed
             let audioEndTime = audioTrack.duration / audioSpeed
             if videoEndTime > audioEndTime {
-                audioOffset = audioTrack.duration - (videoTrack.duration * audioSpeed / videoSpeed)
+                audioOffset = max(0, audioTrack.duration - (videoTrack.duration * audioSpeed / videoSpeed))
             } else {
-                videoOffset = videoTrack.duration - (audioTrack.duration * videoSpeed / audioSpeed)
+                videoOffset = max(0, videoTrack.duration - (audioTrack.duration * videoSpeed / audioSpeed))
             }
         case .sync:
             videoOffset = 0
@@ -426,7 +431,8 @@ struct AudioVideoEditorView: View {
             }
             
             await MainActor.run {
-                errorMessage = "合并成功！"
+                successMessage = "合并成功！"
+                errorMessage = nil
                 NSWorkspace.shared.activateFileViewerSelecting([outputURL])
             }
         } catch {
@@ -446,7 +452,8 @@ struct AudioVideoEditorView: View {
         isExporting = true
         exportProgress = 0
         
-        let output = videoURL.deletingPathExtension().appendingPathExtension("m4a")
+        let baseName = videoURL.deletingPathExtension().lastPathComponent
+        let output = videoURL.deletingLastPathComponent().appendingPathComponent("\(baseName).m4a")
         
         do {
             try await AudioVideoToolkit.shared.extractAudio(
@@ -459,7 +466,8 @@ struct AudioVideoEditorView: View {
             }
             
             await MainActor.run {
-                errorMessage = "音频分离成功！"
+                successMessage = "音频分离成功！"
+                errorMessage = nil
                 NSWorkspace.shared.activateFileViewerSelecting([output])
             }
         } catch {
@@ -479,7 +487,8 @@ struct AudioVideoEditorView: View {
         isExporting = true
         exportProgress = 0
         
-        let output = videoURL.deletingPathExtension().appendingPathExtension("_novideo.mov")
+        let baseName = videoURL.deletingPathExtension().lastPathComponent
+        let output = videoURL.deletingLastPathComponent().appendingPathComponent("\(baseName)_novideo.mov")
         
         do {
             try await AudioVideoToolkit.shared.extractVideo(
@@ -492,7 +501,8 @@ struct AudioVideoEditorView: View {
             }
             
             await MainActor.run {
-                errorMessage = "视频分离成功！"
+                successMessage = "视频分离成功！"
+                errorMessage = nil
                 NSWorkspace.shared.activateFileViewerSelecting([output])
             }
         } catch {
@@ -515,13 +525,6 @@ struct AudioVideoEditorView: View {
             previewPlayer.play()
         }
         isPlaying.toggle()
-    }
-    
-    private func formatTime(_ seconds: Double) -> String {
-        let mins = Int(seconds / 60)
-        let secs = Int(seconds.truncatingRemainder(dividingBy: 60))
-        let ms = Int((seconds - Double(Int(seconds))) * 100)
-        return String(format: "%02d:%02d.%02d", mins, secs, ms)
     }
     
     private func addAction(_ action: EditAction) {
@@ -651,7 +654,8 @@ struct TimelineView: View {
                             duration: videoTrack.duration,
                             offset: videoOffset,
                             color: .blue,
-                            label: "视频"
+                            label: "视频",
+                            scale: scale
                         )
                     }
                     
@@ -660,7 +664,8 @@ struct TimelineView: View {
                             duration: audioTrack.duration,
                             offset: audioOffset,
                             color: .green,
-                            label: "音频"
+                            label: "音频",
+                            scale: scale
                         )
                     }
                 }
@@ -687,16 +692,17 @@ struct TrackBar: View {
     let offset: Double
     let color: Color
     let label: String
+    let scale: Double
     
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
             Rectangle()
                 .fill(Color.gray.opacity(0.3))
-                .frame(width: offset * 100, height: 24)
+                .frame(width: offset * 100 * scale, height: 24)
             
             Rectangle()
                 .fill(color)
-                .frame(width: duration * 100, height: 24)
+                .frame(width: duration * 100 * scale, height: 24)
             
             Text(label)
                 .font(.caption)

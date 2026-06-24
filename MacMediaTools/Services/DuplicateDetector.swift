@@ -35,8 +35,8 @@ struct VideoMatchInfo {
 actor DuplicateDetector {
 	static let shared = DuplicateDetector()
 
-	private let photoExts: Set<String> = ["jpg", "jpeg", "png", "heic", "heif", "tif", "tiff", "bmp", "gif", "webp"]
-	private let videoExts: Set<String> = ["mp4", "mov", "m4v", "avi", "mkv", "wmv", "flv", "webm", "3gp"]
+	private let photoExts: Set<String> = MediaFileExtensions.photo
+	private let videoExts: Set<String> = MediaFileExtensions.video
 
 	func isPhotoFile(_ url: URL) -> Bool {
 		photoExts.contains(url.pathExtension.lowercased())

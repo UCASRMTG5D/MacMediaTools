@@ -51,6 +51,7 @@ struct VideoScreenshotExtractorView: View {
     
     // 操作日志
     @ObservedObject private var logManager = OperationLogManager.shared
+    @State private var playbackEndObserver: NSObjectProtocol?
     
     var body: some View {
         HSplitView {
@@ -68,8 +69,8 @@ struct VideoScreenshotExtractorView: View {
         }
         .alert("提取完成", isPresented: $showSuccess) {
             Button("打开目录") {
-                if let result = metadata {
-                    // 打开输出目录
+                if let outputDirectory = extractedFrames.first?.filePath?.deletingLastPathComponent() {
+                    NSWorkspace.shared.open(outputDirectory)
                 }
             }
             Button("确定", role: .cancel) { }
@@ -83,6 +84,10 @@ struct VideoScreenshotExtractorView: View {
             }
         }
         .onDisappear {
+            if let playbackEndObserver {
+                NotificationCenter.default.removeObserver(playbackEndObserver)
+                self.playbackEndObserver = nil
+            }
             previewPlayer?.pause()
         }
         .modifier(KeyboardShortcutsModifier(
@@ -390,6 +395,12 @@ struct VideoScreenshotExtractorView: View {
             let metadata = try await VideoScreenshotExtractor.shared.getVideoMetadata(url: url)
             
             await MainActor.run {
+                if let playbackEndObserver {
+                    NotificationCenter.default.removeObserver(playbackEndObserver)
+                    self.playbackEndObserver = nil
+                }
+                previewPlayer?.pause()
+
                 self.videoURL = url
                 self.metadata = metadata
                 self.videoDuration = metadata.duration
@@ -419,12 +430,17 @@ struct VideoScreenshotExtractorView: View {
         if isPlaying {
             previewPlayer?.pause()
         } else {
+            if let playbackEndObserver {
+                NotificationCenter.default.removeObserver(playbackEndObserver)
+                self.playbackEndObserver = nil
+            }
+
             // 只在选定范围内播放
             previewPlayer?.seek(to: CMTime(seconds: startTime, preferredTimescale: 600))
             previewPlayer?.play()
             
             // 设置播放结束处理
-            NotificationCenter.default.addObserver(
+            playbackEndObserver = NotificationCenter.default.addObserver(
                 forName: .AVPlayerItemDidPlayToEndTime,
                 object: previewPlayer?.currentItem,
                 queue: .main
@@ -433,6 +449,10 @@ struct VideoScreenshotExtractorView: View {
                     previewPlayer?.pause()
                     previewPlayer?.seek(to: CMTime(seconds: startTime, preferredTimescale: 600))
                     isPlaying = false
+                    if let playbackEndObserver {
+                        NotificationCenter.default.removeObserver(playbackEndObserver)
+                        self.playbackEndObserver = nil
+                    }
                 }
             }
         }
@@ -455,22 +475,6 @@ struct VideoScreenshotExtractorView: View {
     private func parseEndTime(_ string: String) {
         if let time = parseTimeString(string) {
             endTime = max(startTime + 0.1, min(time, videoDuration))
-        }
-    }
-    
-    private func parseTimeString(_ string: String) -> Double? {
-        let components = string.components(separatedBy: CharacterSet(charactersIn: ":."))
-        let numbers = components.compactMap { Double($0) }
-        
-        switch numbers.count {
-        case 4: // h:m:s.ms
-            return numbers[0] * 3600 + numbers[1] * 60 + numbers[2] + numbers[3] / 1000
-        case 3: // m:s.ms
-            return numbers[0] * 60 + numbers[1] + numbers[2] / 1000
-        case 2: // s.ms
-            return numbers[0] + numbers[1] / 1000
-        default:
-            return nil
         }
     }
     
@@ -600,22 +604,6 @@ struct VideoScreenshotExtractorView: View {
     
     // MARK: - Utility Methods
     
-    private func formatTime(_ seconds: Double) -> String {
-        guard seconds.isFinite else {
-            return "00:00.000"
-        }
-        let clampedSeconds = max(0, seconds)
-        let ms = Int((clampedSeconds.truncatingRemainder(dividingBy: 1)) * 1000)
-        let s = Int(clampedSeconds) % 60
-        let m = Int(clampedSeconds) / 60 % 60
-        let h = Int(clampedSeconds) / 3600
-        
-        if h > 0 {
-            return String(format: "%d:%02d:%02d.%03d", h, m, s, ms)
-        }
-        return String(format: "%02d:%02d.%03d", m, s, ms)
-    }
-    
     private func formatDuration(_ seconds: TimeInterval) -> String {
         guard seconds.isFinite else {
             return "计算中..."
@@ -743,17 +731,6 @@ struct ThumbnailPreviewPanel: View {
         .cornerRadius(10)
     }
     
-    private func formatTime(_ seconds: Double) -> String {
-        let ms = Int((seconds.truncatingRemainder(dividingBy: 1)) * 1000)
-        let s = Int(seconds) % 60
-        let m = Int(seconds) / 60 % 60
-        let h = Int(seconds) / 3600
-        
-        if h > 0 {
-            return String(format: "%d:%02d:%02d.%03d", h, m, s, ms)
-        }
-        return String(format: "%02d:%02d.%03d", m, s, ms)
-    }
 }
 
 struct FrameThumbnail: View {
@@ -814,18 +791,6 @@ struct FrameThumbnail: View {
     }
 }
 
-private func formatTime(_ seconds: Double) -> String {
-    let ms = Int((seconds.truncatingRemainder(dividingBy: 1)) * 1000)
-    let s = Int(seconds) % 60
-    let m = Int(seconds) / 60 % 60
-    let h = Int(seconds) / 3600
-    
-    if h > 0 {
-        return String(format: "%d:%02d:%02d.%03d", h, m, s, ms)
-    }
-    return String(format: "%02d:%02d.%03d", m, s, ms)
-}
-
 struct KeyboardShortcutsModifier: ViewModifier {
     @Binding var isPlaying: Bool
     let videoURL: URL?
@@ -834,12 +799,20 @@ struct KeyboardShortcutsModifier: ViewModifier {
     let togglePlay: () -> Void
     let seekToTime: (Double) -> Void
     
+    @State private var eventMonitor: Any?
+    
     func body(content: Content) -> some View {
         content
             .onAppear {
-                NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                     handleKeyEvent(event)
                     return event
+                }
+            }
+            .onDisappear {
+                if let monitor = eventMonitor {
+                    NSEvent.removeMonitor(monitor)
+                    eventMonitor = nil
                 }
             }
     }

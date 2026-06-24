@@ -57,42 +57,43 @@ actor AudioVideoToolkit {
         guard let videoTrack = videoTracks.first, let audioTrack = audioTracks.first else {
             throw NSError(domain: "AudioVideoToolkit", code: -2, userInfo: [NSLocalizedDescriptionKey: "Failed to load tracks"])
         }
-        
+
         let videoDuration = try await videoAsset.load(.duration)
         let audioDuration = try await audioAsset.load(.duration)
-        
+
+        guard settings.videoSpeed > 0, settings.audioSpeed > 0 else {
+            throw NSError(domain: "AudioVideoToolkit", code: -6, userInfo: [NSLocalizedDescriptionKey: "播放速度必须大于 0"])
+        }
+
+        let videoStart = clampedStartTime(settings.videoStartOffset, duration: videoDuration.seconds)
+        let audioStart = clampedStartTime(settings.audioStartOffset, duration: audioDuration.seconds)
+        let videoRange = safeTimeRange(startSeconds: videoStart, duration: videoDuration.seconds - videoStart)
+        let audioRange = safeTimeRange(startSeconds: audioStart, duration: audioDuration.seconds - audioStart)
+
         let composition = AVMutableComposition()
-        
+
         let videoCompTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
         let audioCompTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-        
-        let videoTimeRange = CMTimeRange(start: CMTime(seconds: settings.videoStartOffset, preferredTimescale: 600), duration: videoDuration - CMTime(seconds: settings.videoStartOffset, preferredTimescale: 600))
-        let audioTimeRange = CMTimeRange(start: CMTime(seconds: settings.audioStartOffset, preferredTimescale: 600), duration: audioDuration - CMTime(seconds: settings.audioStartOffset, preferredTimescale: 600))
-        
-        try videoCompTrack?.insertTimeRange(videoTimeRange, of: videoTrack, at: .zero)
-        try audioCompTrack?.insertTimeRange(audioTimeRange, of: audioTrack, at: .zero)
-        
-        if settings.videoSpeed != 1.0 {
-            let videoRate = AVMutableVideoCompositionLayerInstruction(assetTrack: videoCompTrack!)
-            let scale = CGAffineTransform(scaleX: CGFloat(settings.videoSpeed), y: CGFloat(settings.videoSpeed))
-            videoRate.setTransform(scale, at: CMTime.zero)
-            
-            let adjustedDuration = CMTime(seconds: videoDuration.seconds / settings.videoSpeed, preferredTimescale: videoDuration.timescale)
-            let videoInstruction = AVMutableVideoCompositionInstruction()
-            videoInstruction.timeRange = CMTimeRange(start: CMTime.zero, duration: adjustedDuration)
-            videoInstruction.layerInstructions = [videoRate]
-            
-            let videoComposition = AVMutableVideoComposition()
-            videoComposition.instructions = [videoInstruction]
-            videoComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
-            
-            let videoSize = try await videoTrack.load(.naturalSize)
-            videoComposition.renderSize = videoSize
-            
-            try await export(composition: composition, videoComposition: videoComposition, outputURL: outputURL, progressHandler: progressHandler)
-        } else {
-            try await export(composition: composition, videoComposition: nil, outputURL: outputURL, progressHandler: progressHandler)
+
+        guard let videoCompTrack, let audioCompTrack else {
+            throw NSError(domain: "AudioVideoToolkit", code: -2, userInfo: [NSLocalizedDescriptionKey: "Failed to create composition tracks"])
         }
+
+        try videoCompTrack.insertTimeRange(videoRange, of: videoTrack, at: .zero)
+        try audioCompTrack.insertTimeRange(audioRange, of: audioTrack, at: .zero)
+
+        let videoScaledDuration = scaledDuration(of: videoRange.duration, speed: settings.videoSpeed)
+        let audioScaledDuration = scaledDuration(of: audioRange.duration, speed: settings.audioSpeed)
+
+        if settings.videoSpeed != 1.0 {
+            try videoCompTrack.scaleTimeRange(CMTimeRange(start: .zero, duration: videoRange.duration), toDuration: videoScaledDuration)
+        }
+
+        if settings.audioSpeed != 1.0 {
+            try audioCompTrack.scaleTimeRange(CMTimeRange(start: .zero, duration: audioRange.duration), toDuration: audioScaledDuration)
+        }
+
+        try await export(composition: composition, outputURL: outputURL, progressHandler: progressHandler)
     }
     
     func extractAudio(from videoURL: URL, outputURL: URL, progressHandler: @escaping (Double) -> Void) async throws {
@@ -109,7 +110,9 @@ actor AudioVideoToolkit {
         let duration = try await asset.load(.duration)
         try audioCompTrack?.insertTimeRange(CMTimeRangeMake(start: .zero, duration: duration), of: audioTrack, at: .zero)
         
-        let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)!
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A) else {
+            throw NSError(domain: "AudioVideoToolkit", code: -8, userInfo: [NSLocalizedDescriptionKey: "Failed to create audio export session"])
+        }
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .m4a
         
@@ -130,7 +133,9 @@ actor AudioVideoToolkit {
         let duration = try await asset.load(.duration)
         try videoCompTrack?.insertTimeRange(CMTimeRangeMake(start: .zero, duration: duration), of: videoTrack, at: .zero)
         
-        let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality)!
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            throw NSError(domain: "AudioVideoToolkit", code: -9, userInfo: [NSLocalizedDescriptionKey: "Failed to create video export session"])
+        }
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mov
         
@@ -139,21 +144,34 @@ actor AudioVideoToolkit {
     
     private func export(
         composition: AVMutableComposition,
-        videoComposition: AVMutableVideoComposition?,
         outputURL: URL,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
-        let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality)!
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            throw NSError(domain: "AudioVideoToolkit", code: -7, userInfo: [NSLocalizedDescriptionKey: "Failed to create export session"])
+        }
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mov
-        
-        if let videoComposition {
-            exportSession.videoComposition = videoComposition
-        }
-        
+
         try await performExport(session: exportSession, progressHandler: progressHandler)
     }
-    
+
+    private func clampedStartTime(_ start: Double, duration: Double) -> Double {
+        guard duration.isFinite, duration > 0 else { return 0 }
+        return min(max(start, 0), max(duration - 0.001, 0))
+    }
+
+    private func safeTimeRange(startSeconds: Double, duration: Double) -> CMTimeRange {
+        let start = CMTime(seconds: startSeconds, preferredTimescale: 600)
+        let clampedDuration = max(duration, 0)
+        return CMTimeRange(start: start, duration: CMTime(seconds: clampedDuration, preferredTimescale: 600))
+    }
+
+    private func scaledDuration(of duration: CMTime, speed: Double) -> CMTime {
+        guard speed != 1.0 else { return duration }
+        return CMTime(seconds: duration.seconds / speed, preferredTimescale: duration.timescale == 0 ? 600 : duration.timescale)
+    }
+
     private func performExport(session: AVAssetExportSession, progressHandler: @escaping (Double) -> Void) async throws {
         return try await withCheckedThrowingContinuation { continuation in
             let progressObserver = session.observe(\.progress) { _, _ in

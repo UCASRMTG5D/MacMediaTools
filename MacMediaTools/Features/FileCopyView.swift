@@ -14,8 +14,8 @@ struct FileCopyView: View {
 	@State private var copyProgress: Double = 0
 	@State private var currentFileName: String = ""
 
-	private let photoExts: Set<String> = ["jpg", "jpeg", "png", "heic", "heif", "tif", "tiff", "bmp", "gif", "webp"]
-	private let videoExts: Set<String> = ["mp4", "mov", "avi", "mkv", "wmv", "flv", "webm", "m4v", "3gp"]
+	private let photoExts: Set<String> = MediaFileExtensions.photo
+	private let videoExts: Set<String> = MediaFileExtensions.video
 
 	var body: some View {
 		ScrollView {

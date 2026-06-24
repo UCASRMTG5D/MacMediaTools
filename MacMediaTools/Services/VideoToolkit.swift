@@ -136,7 +136,7 @@ enum VideoToolkit {
 		inputURLs: [URL],
 		outputURL: URL
 	) async throws {
-		guard inputURLs.count >= 2 else { return }
+		guard inputURLs.count >= 2 else { throw VideoToolkitError.exportFailed("至少需要2个视频才能拼接") }
 
 		let assets = inputURLs.map { AVURLAsset(url: $0) }
 		let firstInfo = try await readDisplayInfo(url: inputURLs[0])

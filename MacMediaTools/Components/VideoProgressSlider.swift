@@ -178,15 +178,5 @@ struct VideoProgressSlider: View {
         onTimeChange?(currentTime)
     }
     
-    private func formatTime(_ seconds: Double) -> String {
-        let ms = Int((seconds.truncatingRemainder(dividingBy: 1)) * 1000)
-        let s = Int(seconds) % 60
-        let m = Int(seconds) / 60 % 60
-        let h = Int(seconds) / 3600
-        
-        if h > 0 {
-            return String(format: "%d:%02d:%02d.%03d", h, m, s, ms)
-        }
-        return String(format: "%02d:%02d.%03d", m, s, ms)
-    }
+
 }

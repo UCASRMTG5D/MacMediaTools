@@ -7,14 +7,18 @@ class OperationLogManager: ObservableObject {
     private let logQueue = DispatchQueue(label: "com.example.VideoScreenshotExtractor.logQueue")
     
     struct LogEntry: Identifiable, Codable {
-        let id = UUID()
+        let id: UUID
         let timestamp: Date
         let level: LogLevel
         let message: String
         let details: String?
         
-        enum CodingKeys: String, CodingKey {
-            case timestamp, level, message, details
+        init(id: UUID = UUID(), timestamp: Date, level: LogLevel, message: String, details: String? = nil) {
+            self.id = id
+            self.timestamp = timestamp
+            self.level = level
+            self.message = message
+            self.details = details
         }
         
         enum LogLevel: String, Codable {
@@ -65,9 +69,8 @@ class OperationLogManager: ObservableObject {
                 if self?.logs.count ?? 0 > 1000 {
                     self?.logs.removeLast()
                 }
+                self?.saveLogs()
             }
-            
-            self?.saveLogs()
         }
     }
     
@@ -81,6 +84,10 @@ class OperationLogManager: ObservableObject {
     }
     
     func logExtractionProgress(current: Int, total: Int) {
+        guard total > 0 else {
+            addLog("提取进度: \(current)/\(total)", level: .info)
+            return
+        }
         let progress = Double(current) / Double(total) * 100
         addLog("提取进度: \(current)/\(total) (\(String(format: "%.1f", progress))%)", level: .info)
     }
@@ -149,20 +156,10 @@ class OperationLogManager: ObservableObject {
         logQueue.async { [weak self] in
             DispatchQueue.main.async {
                 self?.logs.removeAll()
+                self?.saveLogs()
             }
-            self?.saveLogs()
         }
     }
     
-    private func formatTime(_ seconds: Double) -> String {
-        let ms = Int((seconds.truncatingRemainder(dividingBy: 1)) * 1000)
-        let s = Int(seconds) % 60
-        let m = Int(seconds) / 60 % 60
-        let h = Int(seconds) / 3600
-        
-        if h > 0 {
-            return String(format: "%d:%02d:%02d.%03d", h, m, s, ms)
-        }
-        return String(format: "%02d:%02d.%03d", m, s, ms)
-    }
+
 }

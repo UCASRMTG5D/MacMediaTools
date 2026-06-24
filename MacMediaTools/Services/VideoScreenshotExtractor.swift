@@ -87,7 +87,7 @@ actor VideoScreenshotExtractor {
     // MARK: - Validation
     
     func validateVideoFormat(url: URL) async -> Bool {
-        let supportedExtensions = ["mp4", "mov", "avi", "mkv", "m4v", "flv", "wmv", "webm"]
+		let supportedExtensions = Array(MediaFileExtensions.video)
         let fileExtension = url.pathExtension.lowercased()
         return supportedExtensions.contains(fileExtension)
     }
@@ -224,6 +224,12 @@ actor VideoScreenshotExtractor {
         for (index, targetTime) in timePoints.enumerated() {
             // 检查暂停
             while pauseHandler() {
+                if cancelHandler() {
+                    logs.append("[\(timestamp())] 用户取消操作")
+                    throw NSError(domain: "VideoScreenshotExtractor", code: -3, userInfo: [
+                        NSLocalizedDescriptionKey: "用户已取消"
+                    ])
+                }
                 try await Task.sleep(nanoseconds: 100_000_000)
             }
             
@@ -396,47 +402,10 @@ actor VideoScreenshotExtractor {
     // MARK: - Utility Methods
     
     private func timestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-        return formatter.string(from: Date())
-    }
-    
-    func formatTime(_ seconds: Double) -> String {
-        guard seconds.isFinite else {
-            return "00:00.000"
-        }
-        let clampedSeconds = max(0, seconds)
-        let ms = Int((clampedSeconds.truncatingRemainder(dividingBy: 1)) * 1000)
-        let s = Int(clampedSeconds) % 60
-        let m = Int(clampedSeconds) / 60 % 60
-        let h = Int(clampedSeconds) / 3600
-        
-        if h > 0 {
-            return String(format: "%d:%02d:%02d.%03d", h, m, s, ms)
-        }
-        return String(format: "%02d:%02d.%03d", m, s, ms)
-    }
-    
-    func parseTime(_ string: String) -> Double? {
-        let components = string.components(separatedBy: CharacterSet(charactersIn: ":."))
-        let numbers = components.compactMap { Double($0) }
-        
-        switch numbers.count {
-        case 4: // h:m:s.ms
-            return numbers[0] * 3600 + numbers[1] * 60 + numbers[2] + numbers[3] / 1000
-        case 3: // m:s.ms
-            return numbers[0] * 60 + numbers[1] + numbers[2] / 1000
-        case 2: // s.ms
-            return numbers[0] + numbers[1] / 1000
-        default:
-            return nil
-        }
+        currentTimestamp()
     }
     
     private func formatTimestamp(_ seconds: Double) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss-SSS"
-        let date = Date(timeIntervalSince1970: seconds)
-        return formatter.string(from: date)
+        formatFileNameTimestamp(seconds)
     }
 }

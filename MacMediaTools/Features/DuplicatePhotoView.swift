@@ -16,9 +16,7 @@ struct DuplicatePhotoView: View {
 	@State private var groups: [DuplicatePhotoGroup] = []
 	@State private var errorMessage: String?
 
-	private let photoExts: Set<String> = [
-		"jpg", "jpeg", "png", "heic", "heif", "tif", "tiff", "bmp", "gif", "webp"
-	]
+	private let photoExts: Set<String> = MediaFileExtensions.photo
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
