@@ -63,9 +63,22 @@ struct FileCopyView: View {
 							.disabled(isCopying)
 						}
 
-						List(availableFiles, selection: $selectedFiles) {
-							Text("\($0.fileName) (\($0.fileType == .photo ? "图片" : "视频"))")
-								.tag($0)
+						List(availableFiles, selection: $selectedFiles) { item in
+							HStack(spacing: 12) {
+								Text("\(item.fileName) (\(item.fileType == .photo ? "图片" : "视频"))")
+									.tag(item)
+								Spacer()
+								Button("显示") {
+									NSWorkspace.shared.activateFileViewerSelecting([item.url])
+								}
+								.buttonStyle(.borderless)
+								Button("移除") {
+									availableFiles.removeAll { $0.id == item.id }
+									selectedFiles.remove(item)
+								}
+								.foregroundColor(.red)
+								.buttonStyle(.borderless)
+							}
 						}
 						.frame(height: 200)
 						.background(Color(nsColor: .controlBackgroundColor))

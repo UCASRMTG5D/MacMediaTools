@@ -96,7 +96,7 @@ struct DuplicateMediaView: View {
 				ScrollView {
 					LazyVStack(alignment: .leading, spacing: 10) {
 						ForEach(filteredGroups) { group in
-							DuplicateGroupView(group: group)
+							DuplicateGroupView(group: group, onDelete: deleteFile)
 						}
 					}
 				}
@@ -166,17 +166,44 @@ struct DuplicateMediaView: View {
 			}
 		}.value
 	}
+
+	private func deleteFile(_ url: URL) {
+		let alert = NSAlert()
+		alert.messageText = "确认删除文件"
+		alert.informativeText = "确定要删除文件 \"\(url.lastPathComponent)\" 吗？此操作无法撤销。"
+		alert.alertStyle = .warning
+		alert.addButton(withTitle: "删除")
+		alert.addButton(withTitle: "取消")
+		
+		if alert.runModal() == .alertFirstButtonReturn {
+			do {
+				try FileManager.default.removeItem(at: url)
+				groups = groups.map { group in
+					let remaining = group.files.filter { $0 != url }
+					return DuplicateGroup(id: group.id, mediaType: group.mediaType, matchReason: group.matchReason, files: remaining)
+				}.filter { $0.files.count > 1 }
+			} catch {
+				errorMessage = "删除失败：\(error.localizedDescription)"
+			}
+		}
+	}
 }
 
 struct DuplicateGroupView: View {
 	let group: DuplicateGroup
+	let onDelete: ((URL) -> Void)?
 	@State private var isExpanded = false
+
+	init(group: DuplicateGroup, onDelete: ((URL) -> Void)? = nil) {
+		self.group = group
+		self.onDelete = onDelete
+	}
 
 	var body: some View {
 		DisclosureGroup(isExpanded: $isExpanded) {
 			VStack(alignment: .leading, spacing: 6) {
 				ForEach(group.files, id: \.self) { url in
-					HStack {
+					HStack(spacing: 12) {
 						ThumbnailView(url: url, mediaType: group.mediaType)
 							.frame(width: 40, height: 40)
 							.clipShape(RoundedRectangle(cornerRadius: 4))
@@ -191,6 +218,12 @@ struct DuplicateGroupView: View {
 						Button("显示") {
 							NSWorkspace.shared.activateFileViewerSelecting([url])
 						}
+						.buttonStyle(.borderless)
+
+						Button("删除") {
+							onDelete?(url)
+						}
+						.foregroundColor(.red)
 						.buttonStyle(.borderless)
 					}
 				}

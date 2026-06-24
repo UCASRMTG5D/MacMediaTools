@@ -23,7 +23,7 @@ struct VideoCropView: View {
 			Text("视频尺寸裁剪")
 				.font(.title2)
 
-			HStack {
+			HStack(spacing: 12) {
 				OpenPanelButton(
 					title: "选择视频…",
 					mode: .file(allowedTypes: [.movie], allowsMultipleSelection: false)
@@ -34,6 +34,13 @@ struct VideoCropView: View {
 				Text(inputURL?.path ?? "未选择")
 					.lineLimit(1)
 					.truncationMode(.middle)
+
+				if let inputURL {
+					Button("在 Finder 中显示") {
+						NSWorkspace.shared.activateFileViewerSelecting([inputURL])
+					}
+					.buttonStyle(.borderless)
+				}
 			}
 
 			Text(infoText)

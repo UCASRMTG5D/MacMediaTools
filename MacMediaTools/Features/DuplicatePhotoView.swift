@@ -70,7 +70,7 @@ struct DuplicatePhotoView: View {
 						DisclosureGroup {
 							VStack(alignment: .leading, spacing: 6) {
 								ForEach(group.files, id: \.self) { url in
-									HStack {
+									HStack(spacing: 12) {
 										Text(url.path)
 											.font(.system(size: 12))
 											.lineLimit(2)
@@ -79,6 +79,11 @@ struct DuplicatePhotoView: View {
 										Button("在 Finder 中显示") {
 											NSWorkspace.shared.activateFileViewerSelecting([url])
 										}
+										.buttonStyle(.borderless)
+										Button("删除") {
+											deleteFile(url)
+										}
+										.foregroundColor(.red)
 										.buttonStyle(.borderless)
 									}
 								}
@@ -145,6 +150,27 @@ struct DuplicatePhotoView: View {
 				groups = dupGroups
 				statusText = "完成：共扫描 \(files.count) 张图片，发现 \(groups.count) 组重复"
 				isWorking = false
+			}
+		}
+	}
+
+	private func deleteFile(_ url: URL) {
+		let alert = NSAlert()
+		alert.messageText = "确认删除文件"
+		alert.informativeText = "确定要删除文件 \"\(url.lastPathComponent)\" 吗？此操作无法撤销。"
+		alert.alertStyle = .warning
+		alert.addButton(withTitle: "删除")
+		alert.addButton(withTitle: "取消")
+		
+		if alert.runModal() == .alertFirstButtonReturn {
+			do {
+				try FileManager.default.removeItem(at: url)
+				groups = groups.map { group in
+					let remaining = group.files.filter { $0 != url }
+					return DuplicatePhotoGroup(id: group.id, files: remaining)
+				}.filter { $0.files.count > 1 }
+			} catch {
+				errorMessage = "删除失败：\(error.localizedDescription)"
 			}
 		}
 	}

@@ -7,6 +7,7 @@ struct OpenPanelButton: View {
 		case file(allowedTypes: [UTType], allowsMultipleSelection: Bool)
 		case folder
 		case mediaFiles // 支持图片和视频的多选，带缩略图预览
+		case audio // 支持音频文件选择
 	}
 
 	let title: String
@@ -41,6 +42,17 @@ struct OpenPanelButton: View {
 					UTType("com.apple.quicktime-movie")
 				].compactMap { $0 }
 				panel.prompt = "选择媒体文件"
+			case .audio:
+				panel.canChooseFiles = true
+				panel.canChooseDirectories = false
+				panel.allowsMultipleSelection = false
+				panel.allowedContentTypes = [
+					UTType.audio,
+					UTType.mp3,
+					UTType.wav,
+					UTType.mpeg4Audio
+				].compactMap { $0 }
+				panel.prompt = "选择音频文件"
 			}
 
 			if panel.runModal() == .OK {

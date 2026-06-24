@@ -19,6 +19,10 @@ struct RootView: View {
 					VideoCropView()
 				case .videoConcat:
 					VideoConcatView()
+				case .audioVideoEdit:
+					AudioVideoEditorView()
+				case .keyFrameExtract:
+					VideoScreenshotExtractorView()
 				case .duplicatePhotos:
 					DuplicatePhotoView()
 				case .duplicateVideos:

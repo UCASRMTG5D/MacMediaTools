@@ -11,6 +11,7 @@ struct VideoConcatView: View {
 	@State private var outputFileName: String = "merged_1.mp4"
 
 	@State private var isWorking = false
+	@State private var isLoading = false
 	@State private var lastOutputURL: URL?
 	@State private var errorMessage: String?
 
@@ -21,14 +22,24 @@ struct VideoConcatView: View {
 
 			HStack(spacing: 10) {
 				OpenPanelButton(
-					title: "批量选择视频…",
+					title: isLoading ? "加载中…" : "批量选择视频…",
 					mode: .file(allowedTypes: [.movie], allowsMultipleSelection: true)
 				) { urls in
-					addVideos(urls)
+					Task { await addVideos(urls) }
 				}
+				.disabled(isLoading || isWorking)
 
 				Button("清空") { videos.removeAll() }
-					.disabled(videos.isEmpty)
+					.disabled(videos.isEmpty || isLoading || isWorking)
+			}
+
+			if isLoading {
+				HStack(spacing: 8) {
+					ProgressView()
+						.scaleEffect(0.8)
+					Text("正在加载视频文件…")
+						.foregroundStyle(.secondary)
+				}
 			}
 
 			Text("已选择：\(videos.count) 个（在列表里可拖动调整顺序）")
@@ -46,6 +57,9 @@ struct VideoConcatView: View {
 					.truncationMode(.middle)
 					.tag(url)
 					.contextMenu {
+						Button("在 Finder 中显示") {
+							NSWorkspace.shared.activateFileViewerSelecting([url])
+						}
 						Button("删除") { delete(url) }
 					}
 					.onDrag {
@@ -95,7 +109,7 @@ struct VideoConcatView: View {
 				Button(isWorking ? "拼接中…" : "开始拼接") {
 					Task { await run() }
 				}
-				.disabled(isWorking || videos.count < 2)
+				.disabled(isWorking || isLoading || videos.count < 2)
 
 				if let lastOutputURL {
 					Button("在 Finder 中显示结果") {
@@ -113,20 +127,44 @@ struct VideoConcatView: View {
 		}
 	}
 
-	private func addVideos(_ urls: [URL]) {
-		errorMessage = nil
-		lastOutputURL = nil
+	private func addVideos(_ urls: [URL]) async {
+		guard !isLoading else { return }
+		
+		await MainActor.run {
+			isLoading = true
+			errorMessage = nil
+			lastOutputURL = nil
+		}
 
-		// 去重、保持顺序
-		for url in urls {
-			if !videos.contains(url) {
-				videos.append(url)
+		await Task.detached(priority: .userInitiated) {
+			var validVideos: [URL] = []
+			
+			for url in urls {
+				if !FileManager.default.fileExists(atPath: url.path) {
+					continue
+				}
+				
+				let ext = url.pathExtension.lowercased()
+				let videoExts: Set<String> = ["mp4", "mov", "m4v", "avi", "mkv", "wmv", "flv", "webm"]
+				if videoExts.contains(ext) {
+					validVideos.append(url)
+				}
 			}
-		}
-
-		if outputFolder == nil, let first = videos.first {
-			outputFolder = first.deletingLastPathComponent()
-		}
+			
+			await MainActor.run {
+				for url in validVideos {
+					if !videos.contains(url) {
+						videos.append(url)
+					}
+				}
+				
+				if outputFolder == nil, let first = videos.first {
+					outputFolder = first.deletingLastPathComponent()
+				}
+				
+				isLoading = false
+			}
+		}.value
 	}
 
 	private func move(from source: IndexSet, to destination: Int) {
