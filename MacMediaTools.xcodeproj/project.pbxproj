@@ -206,7 +206,6 @@
 			buildPhases = (
 				AA0000000000000000000030 /* Sources */,
 				AA0000000000000000000031 /* Resources */,
-				AA0000000000000000000033 /* Install to Applications */,
 				AA0000000000000000000032 /* Frameworks */,
 			);
 			buildRules = (
@@ -262,25 +261,7 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		AA0000000000000000000033 /* Install to Applications */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\n\nAPP_PATH=\"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}\"\nDEST_ROOT=\"/Applications\"\n\nif [ ! -w \"$DEST_ROOT\" ]; then\n  DEST_ROOT=\"${HOME}/Applications\"\nfi\n\nmkdir -p \"$DEST_ROOT\"\nrm -rf \"$DEST_ROOT/${FULL_PRODUCT_NAME}\"\nditto \"$APP_PATH\" \"$DEST_ROOT/${FULL_PRODUCT_NAME}\"\n\necho \"Installed ${FULL_PRODUCT_NAME} to ${DEST_ROOT}\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
+
 
 /* Begin PBXSourcesBuildPhase section */
 		AA0000000000000000000030 /* Sources */ = {

@@ -7,3 +7,5 @@ xcuserdata/
 *.xcuserstate
 
 build/
+
+.omo/run-continuation/
