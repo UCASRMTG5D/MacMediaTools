@@ -15,19 +15,21 @@ actor VideoScreenshotExtractor {
         let codec: String
     }
     
-    struct ExtractionSettings {
-        var startTime: Double = 0
-        var endTime: Double = 0
-        var interval: Double = 1.0
-        var outputFormat: OutputFormat = .png
-        var enableQualityCheck: Bool = true
-        var qualityThreshold: Double = 0.85
-        
-        enum OutputFormat: String, CaseIterable {
-            case png = "PNG"
-            case jpeg = "JPEG"
-        }
-    }
+	struct ExtractionSettings {
+		var startTime: Double = 0
+		var endTime: Double = 0
+		var interval: Double = 1.0
+		var outputFormat: OutputFormat = .png
+		var enableQualityCheck: Bool = true
+		var qualityThreshold: Double = 0.85
+		var enableDuplicateFilter: Bool = false
+		var duplicateThreshold: Double = 0.15
+		
+		enum OutputFormat: String, CaseIterable {
+			case png = "PNG"
+			case jpeg = "JPEG"
+		}
+	}
     
     struct ExtractedFrame {
         let time: Double
@@ -105,10 +107,13 @@ actor VideoScreenshotExtractor {
         if settings.interval < 0.1 || settings.interval > 60 {
             return "时间间隔必须在0.1秒至60秒之间"
         }
-        if settings.qualityThreshold < 0 || settings.qualityThreshold > 1 {
-            return "质量阈值必须在0到1之间"
-        }
-        return nil
+		if settings.qualityThreshold < 0 || settings.qualityThreshold > 1 {
+			return "质量阈值必须在0到1之间"
+		}
+		if settings.duplicateThreshold < 0 || settings.duplicateThreshold > 1 {
+			return "相似度阈值必须在0到1之间"
+		}
+		return nil
     }
     
     // MARK: - Quality Assessment
@@ -163,6 +168,100 @@ actor VideoScreenshotExtractor {
         let normalizedScore = min(avgGradient / 200.0, 1.0)
         
         return normalizedScore
+    }
+    
+    // MARK: - Image Similarity & Dedup
+    
+    /// Compute a 16x16 grayscale hash for an image.
+    /// Returns a flattened array of 256 grayscale values (0.0–1.0).
+    private func computeHash(image: CGImage) -> [Double] {
+        let size = 16
+        let width = image.width
+        let height = image.height
+        let scaleX = max(1, width / size)
+        let scaleY = max(1, height / size)
+        
+        guard let data = image.dataProvider?.data,
+              let bytes = CFDataGetBytePtr(data) else {
+            return Array(repeating: 0.5, count: size * size)
+        }
+        
+        let bpp = image.bitsPerPixel / 8
+        let row = image.bytesPerRow
+        var hash = [Double]()
+        hash.reserveCapacity(size * size)
+        
+        for gy in 0..<size {
+            for gx in 0..<size {
+                var r: Double = 0, g: Double = 0, b: Double = 0, count: Double = 0
+                for py in 0..<scaleY {
+                    for px in 0..<scaleX {
+                        let x = gx * scaleX + px
+                        let y = gy * scaleY + py
+                        if x < width && y < height {
+                            let idx = y * row + x * bpp
+                            if idx + 2 < row * height {
+                                r += Double(bytes[idx])
+                                g += Double(bytes[idx + 1])
+                                b += Double(bytes[idx + 2])
+                                count += 1
+                            }
+                        }
+                    }
+                }
+                if count > 0 {
+                    let gray = (r / count * 0.299 + g / count * 0.587 + b / count * 0.114) / 255.0
+                    hash.append(gray)
+                } else {
+                    hash.append(0.5)
+                }
+            }
+        }
+        return hash
+    }
+    
+    /// Compute similarity (0 = identical, 1 = completely different) between two images
+    /// by comparing their 16x16 grayscale hashes.
+    private func imageDifference(_ img1: CGImage, _ img2: CGImage) -> Double {
+        let h1 = computeHash(image: img1)
+        let h2 = computeHash(image: img2)
+        guard h1.count == h2.count, !h1.isEmpty else { return 1.0 }
+        
+        var totalDiff: Double = 0
+        for i in 0..<h1.count {
+            totalDiff += abs(h1[i] - h2[i])
+        }
+        return totalDiff / Double(h1.count)
+    }
+    
+    /// Filter frames: when multiple frames are similar (difference < threshold),
+    /// keep only the one with the highest qualityScore.
+    func filterDuplicateFrames(_ frames: [ExtractedFrame], threshold: Double) -> [ExtractedFrame] {
+        guard frames.count > 1 else { return frames }
+        let clampedThreshold = max(0, min(1, threshold))
+        var kept = [ExtractedFrame]()
+        var used = Set<Int>()
+        
+        for i in 0..<frames.count {
+            guard !used.contains(i) else { continue }
+            var bestIndex = i
+            var cluster = [i]
+            used.insert(i)
+            
+            for j in (i + 1)..<frames.count {
+                guard !used.contains(j) else { continue }
+                let diff = imageDifference(frames[i].image, frames[j].image)
+                if diff < clampedThreshold {
+                    cluster.append(j)
+                    used.insert(j)
+                    if frames[j].qualityScore > frames[bestIndex].qualityScore {
+                        bestIndex = j
+                    }
+                }
+            }
+            kept.append(frames[bestIndex])
+        }
+        return kept
     }
     
     // MARK: - Screenshot Extraction
@@ -339,6 +438,15 @@ actor VideoScreenshotExtractor {
                 logs.append("[\(timestamp())] 帧 \(index + 1) 提取失败: \(error.localizedDescription)")
                 continue
             }
+        }
+        
+        // 内容去重：对相似截图只保留质量最高的
+        if settings.enableDuplicateFilter && extractedFrames.count > 1 {
+            let beforeCount = extractedFrames.count
+            logs.append("[\(timestamp())] 开始内容去重，阈值: \(String(format: "%.2f", settings.duplicateThreshold))")
+            extractedFrames = filterDuplicateFrames(extractedFrames, threshold: settings.duplicateThreshold)
+            let removed = beforeCount - extractedFrames.count
+            logs.append("[\(timestamp())] 内容去重完成，移除了 \(removed) 帧相似截图，剩余 \(extractedFrames.count) 帧")
         }
         
         progressHandler(ExtractionProgress(

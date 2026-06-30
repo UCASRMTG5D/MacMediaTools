@@ -19,10 +19,15 @@ struct VideoScreenshotExtractorView: View {
     @State private var endTimeString: String = "00:00.000"
     
     // 提取设置
-    @State private var interval: Double = 1.0
+    @State private var interval: Double = 1.0 {
+        didSet { intervalString = String(format: "%.1f", interval) }
+    }
+    @State private var intervalString: String = "1.0"
     @State private var outputFormat: VideoScreenshotExtractor.ExtractionSettings.OutputFormat = .png
     @State private var enableQualityCheck: Bool = true
     @State private var qualityThreshold: Double = 0.85
+    @State private var enableDuplicateFilter: Bool = false
+    @State private var duplicateThreshold: Double = 0.15
     
     // 输出路径
     @State private var outputDirectory: URL?
@@ -147,9 +152,18 @@ struct VideoScreenshotExtractorView: View {
                         HStack(alignment: .center, spacing: 8) {
                             Slider(value: $interval, in: 0.1...60, step: 0.1)
                                 .frame(maxWidth: .infinity)
-                            Text("\(String(format: "%.1f", interval))s")
+                            TextField("秒", text: $intervalString)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 60)
+                                .onChange(of: intervalString) { newValue in
+                                    if let value = Double(newValue.replacingOccurrences(of: "s", with: "").trimmingCharacters(in: .whitespaces)) {
+                                        let clamped = max(0.1, min(60, value))
+                                        interval = clamped
+                                    }
+                                }
+                            Text("秒")
                                 .font(.system(size: 12))
-                                .frame(width: 50, alignment: .trailing)
+                                .foregroundColor(.secondary)
                         }
                         
                         Text("输出格式")
@@ -171,6 +185,20 @@ struct VideoScreenshotExtractorView: View {
                                 Text("质量阈值: \(String(format: "%.0f", qualityThreshold * 100))%")
                                     .font(.system(size: 12))
                                 Slider(value: $qualityThreshold, in: 0...1, step: 0.05)
+                            }
+                            .padding(.leading, 12)
+                        }
+                        
+                        Toggle("内容去重", isOn: $enableDuplicateFilter)
+                        
+                        if enableDuplicateFilter {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("相似度阈值: \(String(format: "%.0f", duplicateThreshold * 100))%")
+                                    .font(.system(size: 12))
+                                Slider(value: $duplicateThreshold, in: 0.05...1, step: 0.05)
+                                Text("阈值越低，判定为相似的条件越严格")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
                             }
                             .padding(.leading, 12)
                         }
@@ -221,7 +249,7 @@ struct VideoScreenshotExtractorView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollIndicators(.visible)
-        .navigationTitle("截图提取")
+        .navigationTitle("批量截图")
         .background(Color(NSColor.controlBackgroundColor))
     }
 
@@ -504,7 +532,9 @@ struct VideoScreenshotExtractorView: View {
             interval: interval,
             outputFormat: outputFormat,
             enableQualityCheck: enableQualityCheck,
-            qualityThreshold: qualityThreshold
+            qualityThreshold: qualityThreshold,
+            enableDuplicateFilter: enableDuplicateFilter,
+            duplicateThreshold: duplicateThreshold
         )
         
         logManager.logExtractionSettings(
@@ -538,7 +568,8 @@ struct VideoScreenshotExtractorView: View {
             await MainActor.run {
                 self.extractedFrames = result.extractedFrames
                 self.isProcessing = false
-                self.successMessage = "成功提取 \(result.extractedFrames.count) 帧截图，已保存到 \(result.outputDirectory.path)"
+                let dedupNote = self.enableDuplicateFilter ? "（已去重）" : ""
+                self.successMessage = "成功提取 \(result.extractedFrames.count) 帧截图\(dedupNote)，已保存到 \(result.outputDirectory.path)"
                 self.showSuccess = true
                 
                 logManager.logExtractionComplete(

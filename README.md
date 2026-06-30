@@ -12,7 +12,7 @@
 | **视频尺寸裁剪** | 可视化裁剪框拖拽，导出裁剪后视频 |
 | **多个视频拼接** | 批量选择、拖拽排序，拼接为单一视频 |
 | **音视频处理** | 视频与音频轨道合并、时间偏移 / 速度调整、音视频分离 |
-| **关键帧提取** | 按时间间隔截取视频帧，支持智能质量筛选与替代帧搜索 |
+| **批量截图** | 按时间间隔截取视频帧，支持智能质量筛选与替代帧搜索、内容去重 |
 | **重复照片检测** | 递归扫描，SHA256 内容哈希精确匹配 |
 | **重复视频检测** | 按时长 / 大小 / 分辨率分组匹配 |
 | **重复媒体综合检测** | 统一检测照片与视频重复，支持类型筛选与缩略图预览 |
@@ -69,11 +69,13 @@ xed .  # 或从 Xcode 打开 MacMediaTools.xcodeproj
 - 撤销 / 重做（最多 10 步）
 - 基于 `AVMutableComposition` + `AVAssetExportSession`
 
-### 5) 关键帧提取
+### 5) 批量截图
 
 选择视频 → 设置时间范围 / 间隔 → 自动截取帧 → 批量导出截图。
 
 - **智能质量检查**：逐帧计算清晰度评分（基于梯度分析），自动在 ±1s 范围内搜索最佳替代帧
+- **内容去重**：基于 16×16 灰度感知哈希比对截图内容，相似截图只保留质量最高的一张，阈值可调（默认 15%）
+- 时间间隔支持滑块拖拽与直接输入数字两种方式，实时同步
 - 支持 PNG / JPEG 输出格式
 - 实时进度与预计剩余时间
 - 键盘快捷键（空格播放/暂停，左右箭头逐帧）
@@ -141,14 +143,14 @@ MacMediaTools/
 │   ├── FolderScanner.swift        # 递归文件扫描
 │   ├── DuplicateDetector.swift    # 重复媒体检测（actor）
 │   ├── OperationLogManager.swift  # 操作日志管理
-│   └── VideoScreenshotExtractor.swift # 关键帧提取引擎
+│   └── VideoScreenshotExtractor.swift # 批量截图引擎
 └── Features/
     ├── VideoResizeView.swift      # 视频尺寸修改
     ├── VideoCropView.swift        # 视频裁剪
     ├── CropOverlay.swift          # 裁剪框拖拽组件
     ├── VideoConcatView.swift      # 视频拼接
     ├── AudioVideoEditorView.swift # 音视频编辑器
-    ├── VideoScreenshotExtractorView.swift # 关键帧提取界面
+    ├── VideoScreenshotExtractorView.swift # 批量截图界面
     ├── DuplicatePhotoView.swift   # 重复照片检测
     ├── DuplicateVideoView.swift   # 重复视频检测
     ├── DuplicateMediaView.swift   # 综合重复检测

@@ -8,4 +8,5 @@ xcuserdata/
 
 build/
 
+.opencode/
 .omo/run-continuation/
