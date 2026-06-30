@@ -1,6 +1,6 @@
 # MacMediaTools
 
-**纯本地 macOS SwiftUI 多媒体工具箱** — 视频处理、重复媒体检测、视频下载，全部在本地完成。
+**纯本地 macOS SwiftUI 多媒体工具箱** — 视频处理、重复媒体检测，全部在本地完成。
 
 > Apple Silicon（M 系列）优先，Intel Mac 亦可编译运行。
 
@@ -16,14 +16,12 @@
 | **重复照片检测** | 递归扫描，SHA256 内容哈希精确匹配 |
 | **重复视频检测** | 按时长 / 大小 / 分辨率分组匹配 |
 | **重复媒体综合检测** | 统一检测照片与视频重复，支持类型筛选与缩略图预览 |
-| **视频批量下载** | 基于 yt-dlp，支持多链接批量下载与失败重试 |
 | **文件复制工具** | 智能复制媒体文件，自动检测重复并重命名 |
 
 ## 环境要求
 
 - macOS **13.0+**
 - Xcode 15.0+（推荐最新版本）
-- 视频下载功能需安装 [yt-dlp](https://github.com/yt-dlp/yt-dlp)（应用支持自动安装）
 
 ## 编译 / 运行
 
@@ -105,17 +103,7 @@ xed .  # 或从 Xcode 打开 MacMediaTools.xcodeproj
 - 匹配原因描述
 - 分组管理，支持删除操作
 
-### 9) 视频批量下载
-
-基于 yt-dlp 的多链接下载工具。
-
-- 智能链接提取（正则匹配 URL）
-- 下载进度追踪（解析 yt-dlp 输出）
-- 失败自动重试机制
-- 支持小红书、抖音、B站、YouTube 等平台
-- 自动安装 yt-dlp（如果未安装）
-
-### 10) 文件复制工具
+### 9) 文件复制工具
 
 智能媒体文件复制，自动检测目标路径重复。
 
@@ -138,7 +126,6 @@ MacMediaTools/
 ├── Services/
 │   ├── VideoToolkit.swift         # 视频尺寸修改 / 裁剪 / 拼接
 │   ├── AudioVideoToolkit.swift    # 音视频合成 / 分离
-│   ├── VideoDownloader.swift      # yt-dlp 下载引擎
 │   ├── FileHasher.swift           # SHA256 流式哈希
 │   ├── FolderScanner.swift        # 递归文件扫描
 │   ├── DuplicateDetector.swift    # 重复媒体检测（actor）
@@ -154,7 +141,6 @@ MacMediaTools/
     ├── DuplicatePhotoView.swift   # 重复照片检测
     ├── DuplicateVideoView.swift   # 重复视频检测
     ├── DuplicateMediaView.swift   # 综合重复检测
-    ├── VideoDownloadView.swift    # 视频下载
     └── FileCopyView.swift         # 文件复制工具
 ```
 
@@ -166,10 +152,10 @@ MacMediaTools/
 | 视频处理 | AVFoundation / AVKit |
 | 哈希 | CryptoKit (SHA256) |
 | 并发 | Swift Async/Await, Actor |
-| 下载引擎 | Process + yt-dlp |
+| 并发 | Swift Async/Await, Actor |
 
 ## 隐私声明
 
 - **所有处理完全在本地完成**
-- 不上传文件、不联网（视频下载除外）
+- 不上传文件、不联网
 - 不收集用户数据

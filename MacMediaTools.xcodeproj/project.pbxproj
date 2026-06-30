@@ -20,8 +20,6 @@
 		AA000000000000000000010B /* VideoConcatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020B /* VideoConcatView.swift */; };
 		AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020C /* DuplicatePhotoView.swift */; };
 		AA000000000000000000010D /* DuplicateVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020D /* DuplicateVideoView.swift */; };
-		AA000000000000000000010E /* VideoDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020E /* VideoDownloader.swift */; };
-		AA000000000000000000010F /* VideoDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020F /* VideoDownloadView.swift */; };
 		AA0000000000000000000111 /* FileCopyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000210 /* FileCopyView.swift */; };
 		AA0000000000000000000112 /* DuplicateDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000211 /* DuplicateDetector.swift */; };
 		AA0000000000000000000113 /* DuplicateMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000212 /* DuplicateMediaView.swift */; };
@@ -57,8 +55,6 @@
 		AA000000000000000000020B /* VideoConcatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoConcatView.swift; sourceTree = "<group>"; };
 		AA000000000000000000020C /* DuplicatePhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatePhotoView.swift; sourceTree = "<group>"; };
 		AA000000000000000000020D /* DuplicateVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoView.swift; sourceTree = "<group>"; };
-		AA000000000000000000020E /* VideoDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDownloader.swift; sourceTree = "<group>"; };
-		AA000000000000000000020F /* VideoDownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDownloadView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000210 /* FileCopyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCopyView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000211 /* DuplicateDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateDetector.swift; sourceTree = "<group>"; };
 		AA0000000000000000000212 /* DuplicateMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateMediaView.swift; sourceTree = "<group>"; };
@@ -169,7 +165,6 @@
 				AA0000000000000000000205 /* VideoToolkit.swift */,
 				AA0000000000000000000206 /* FileHasher.swift */,
 				AA0000000000000000000207 /* FolderScanner.swift */,
-				AA000000000000000000020E /* VideoDownloader.swift */,
 				AA0000000000000000000211 /* DuplicateDetector.swift */,
 				AA0000000000000000000213 /* AudioVideoToolkit.swift */,
 				AA0000000000000000000215 /* VideoScreenshotExtractor.swift */,
@@ -188,7 +183,6 @@
 				AA000000000000000000020B /* VideoConcatView.swift */,
 				AA000000000000000000020C /* DuplicatePhotoView.swift */,
 				AA000000000000000000020D /* DuplicateVideoView.swift */,
-				AA000000000000000000020F /* VideoDownloadView.swift */,
 				AA0000000000000000000210 /* FileCopyView.swift */,
 				AA0000000000000000000212 /* DuplicateMediaView.swift */,
 				AA0000000000000000000214 /* AudioVideoEditorView.swift */,
@@ -281,9 +275,7 @@
 				AA000000000000000000010B /* VideoConcatView.swift in Sources */,
 				AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */,
 				AA000000000000000000010D /* DuplicateVideoView.swift in Sources */,
-				AA000000000000000000010E /* VideoDownloader.swift in Sources */,
-				AA000000000000000000010F /* VideoDownloadView.swift in Sources */,
-				AA0000000000000000000111 /* FileCopyView.swift in Sources */,
+		AA0000000000000000000111 /* FileCopyView.swift in Sources */,
 				AA0000000000000000000112 /* DuplicateDetector.swift in Sources */,
 				AA0000000000000000000113 /* DuplicateMediaView.swift in Sources */,
 				AA0000000000000000000114 /* AudioVideoToolkit.swift in Sources */,

@@ -29,8 +29,6 @@ struct RootView: View {
 					DuplicateVideoView()
 				case .duplicateMedia:
 					DuplicateMediaView()
-				case .videoDownload:
-					VideoDownloadView()
 				case .fileCopy:
 					FileCopyView()
 				case .none:
