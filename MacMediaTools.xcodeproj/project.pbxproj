@@ -14,9 +14,8 @@
 		AA0000000000000000000105 /* VideoToolkit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000205 /* VideoToolkit.swift */; };
 		AA0000000000000000000106 /* FileHasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000206 /* FileHasher.swift */; };
 		AA0000000000000000000107 /* FolderScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000207 /* FolderScanner.swift */; };
-		AA0000000000000000000108 /* VideoResizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000208 /* VideoResizeView.swift */; };
+		AA0000000000000000000108 /* VideoCropResizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000208 /* VideoCropResizeView.swift */; };
 		AA0000000000000000000109 /* CropOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000209 /* CropOverlay.swift */; };
-		AA000000000000000000010A /* VideoCropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020A /* VideoCropView.swift */; };
 		AA000000000000000000010B /* VideoConcatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020B /* VideoConcatView.swift */; };
 		AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020C /* DuplicatePhotoView.swift */; };
 		AA000000000000000000010D /* DuplicateVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020D /* DuplicateVideoView.swift */; };
@@ -49,9 +48,8 @@
 		AA0000000000000000000205 /* VideoToolkit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoToolkit.swift; sourceTree = "<group>"; };
 		AA0000000000000000000206 /* FileHasher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHasher.swift; sourceTree = "<group>"; };
 		AA0000000000000000000207 /* FolderScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderScanner.swift; sourceTree = "<group>"; };
-		AA0000000000000000000208 /* VideoResizeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoResizeView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000208 /* VideoCropResizeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCropResizeView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000209 /* CropOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropOverlay.swift; sourceTree = "<group>"; };
-		AA000000000000000000020A /* VideoCropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCropView.swift; sourceTree = "<group>"; };
 		AA000000000000000000020B /* VideoConcatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoConcatView.swift; sourceTree = "<group>"; };
 		AA000000000000000000020C /* DuplicatePhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatePhotoView.swift; sourceTree = "<group>"; };
 		AA000000000000000000020D /* DuplicateVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoView.swift; sourceTree = "<group>"; };
@@ -177,9 +175,8 @@
 		AA000000000000000000005D /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000208 /* VideoResizeView.swift */,
+				AA0000000000000000000208 /* VideoCropResizeView.swift */,
 				AA0000000000000000000209 /* CropOverlay.swift */,
-				AA000000000000000000020A /* VideoCropView.swift */,
 				AA000000000000000000020B /* VideoConcatView.swift */,
 				AA000000000000000000020C /* DuplicatePhotoView.swift */,
 				AA000000000000000000020D /* DuplicateVideoView.swift */,
@@ -269,9 +266,8 @@
 				AA0000000000000000000105 /* VideoToolkit.swift in Sources */,
 				AA0000000000000000000106 /* FileHasher.swift in Sources */,
 				AA0000000000000000000107 /* FolderScanner.swift in Sources */,
-				AA0000000000000000000108 /* VideoResizeView.swift in Sources */,
+				AA0000000000000000000108 /* VideoCropResizeView.swift in Sources */,
 				AA0000000000000000000109 /* CropOverlay.swift in Sources */,
-				AA000000000000000000010A /* VideoCropView.swift in Sources */,
 				AA000000000000000000010B /* VideoConcatView.swift in Sources */,
 				AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */,
 				AA000000000000000000010D /* DuplicateVideoView.swift in Sources */,

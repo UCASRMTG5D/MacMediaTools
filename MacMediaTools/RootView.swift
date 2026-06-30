@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
-	@State private var selection: ToolFeature? = .videoResize
+	@State private var selection: ToolFeature? = .videoCropResize
 
 	var body: some View {
 		NavigationSplitView {
@@ -13,10 +13,8 @@ struct RootView: View {
 		} detail: {
 			Group {
 				switch selection {
-				case .videoResize:
-					VideoResizeView()
-				case .videoCrop:
-					VideoCropView()
+				case .videoCropResize:
+					VideoCropResizeView()
 				case .videoConcat:
 					VideoConcatView()
 				case .audioVideoEdit:

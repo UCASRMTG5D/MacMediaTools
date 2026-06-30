@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import ImageIO
 
 struct VideoDisplayInfo: Sendable {
 	let displaySize: CGSize
@@ -131,22 +132,102 @@ enum VideoToolkit {
 		)
 	}
 
+	/// 裁剪 + 尺寸调整合并导出（支持只裁剪、只调整、二者都做）
+	/// - Parameters:
+	///   - cropRect: 裁剪区域（显示坐标系），nil = 不裁剪
+	///   - targetSize: 目标输出尺寸，nil = 使用裁剪后/原始尺寸
+	static func exportCroppedAndResized(
+		inputURL: URL,
+		outputURL: URL,
+		cropRect: CGRect?,
+		targetSize: CGSize?,
+		scaleMode: VideoScaleMode
+	) async throws {
+		guard cropRect != nil || targetSize != nil else {
+			throw VideoToolkitError.exportFailed("请至少启用裁剪或尺寸调整中的一项")
+		}
+
+		let asset = AVURLAsset(url: inputURL)
+		guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
+			throw VideoToolkitError.noVideoTrack
+		}
+
+		let naturalSize = try await videoTrack.load(.naturalSize)
+		let preferredTransform = try await videoTrack.load(.preferredTransform)
+		let display = naturalSize.applying(preferredTransform)
+		let displaySize = CGSize(width: abs(display.width), height: abs(display.height))
+
+		let crop = cropRect ?? CGRect(origin: .zero, size: displaySize)
+		let renderSize = targetSize ?? crop.size
+
+		guard crop.width > 2, crop.height > 2 else {
+			throw VideoToolkitError.exportFailed("裁剪区域太小")
+		}
+
+		let instruction = AVMutableVideoCompositionInstruction()
+		instruction.timeRange = CMTimeRange(start: .zero, duration: asset.duration)
+
+		let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
+
+		if targetSize == nil {
+			// 纯裁剪：仅旋转 + 平移裁剪区域到原点
+			let t = preferredTransform.concatenating(
+				CGAffineTransform(translationX: -crop.origin.x, y: -crop.origin.y)
+			)
+			layerInstruction.setTransform(t, at: .zero)
+		} else {
+			// 裁剪 + 调整 或 纯调整：使用 makeTransform
+			let t = makeTransform(
+				preferredTransform: preferredTransform,
+				sourceDisplaySize: displaySize,
+				targetSize: renderSize,
+				scaleMode: scaleMode,
+				cropRectInTargetSpace: cropRect
+			)
+			layerInstruction.setTransform(t, at: .zero)
+		}
+		instruction.layerInstructions = [layerInstruction]
+
+		let videoComposition = AVMutableVideoComposition()
+		videoComposition.instructions = [instruction]
+		videoComposition.renderSize = renderSize
+		videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+
+		try await export(
+			asset: asset,
+			outputURL: outputURL,
+			videoComposition: videoComposition
+		)
+	}
+
 	/// 多视频拼接（MVP：要求分辨率一致；输出 MP4/H.264+AAC）
 	static func exportConcatenated(
 		inputURLs: [URL],
-		outputURL: URL
+		outputURL: URL,
+		targetSize: CGSize? = nil
 	) async throws {
 		guard inputURLs.count >= 2 else { throw VideoToolkitError.exportFailed("至少需要2个视频才能拼接") }
 
 		let assets = inputURLs.map { AVURLAsset(url: $0) }
-		let firstInfo = try await readDisplayInfo(url: inputURLs[0])
 
-		for (idx, url) in inputURLs.enumerated() where idx > 0 {
-			let info = try await readDisplayInfo(url: url)
-			if abs(info.displaySize.width - firstInfo.displaySize.width) > 0.5 ||
-				abs(info.displaySize.height - firstInfo.displaySize.height) > 0.5 {
-				throw VideoToolkitError.incompatibleVideos("拼接失败：当前MVP要求所有视频分辨率一致（第\(idx + 1)个视频与第1个不一致）。")
+		// Read display info for all videos
+		var videoInfos: [VideoDisplayInfo] = []
+		for url in inputURLs {
+			videoInfos.append(try await readDisplayInfo(url: url))
+		}
+
+		let renderSize: CGSize
+		if let target = targetSize {
+			renderSize = target
+		} else {
+			let firstInfo = videoInfos[0]
+			for (idx, info) in videoInfos.enumerated() where idx > 0 {
+				if abs(info.displaySize.width - firstInfo.displaySize.width) > 0.5 ||
+					abs(info.displaySize.height - firstInfo.displaySize.height) > 0.5 {
+					throw VideoToolkitError.incompatibleVideos("拼接失败：所有视频分辨率必须一致（第\(idx + 1)个视频与第1个不一致）。")
+				}
 			}
+			renderSize = firstInfo.displaySize
 		}
 
 		let composition = AVMutableComposition()
@@ -155,33 +236,58 @@ enum VideoToolkit {
 		}
 		let compAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
 
+		var instructions: [AVMutableVideoCompositionInstruction] = []
 		var cursor = CMTime.zero
-		for asset in assets {
+
+		for (idx, asset) in assets.enumerated() {
 			guard let vTrack = try await asset.loadTracks(withMediaType: .video).first else {
 				throw VideoToolkitError.noVideoTrack
 			}
 			let timeRange = CMTimeRange(start: .zero, duration: asset.duration)
 			try compVideoTrack.insertTimeRange(timeRange, of: vTrack, at: cursor)
+
 			if let aTrack = try await asset.loadTracks(withMediaType: .audio).first, let compAudioTrack {
 				try? compAudioTrack.insertTimeRange(timeRange, of: aTrack, at: cursor)
 			}
+
+			let naturalSize = try await vTrack.load(.naturalSize)
+			let preferredTransform = try await vTrack.load(.preferredTransform)
+
+			if let _ = targetSize {
+				let display = naturalSize.applying(preferredTransform)
+				let displaySize = CGSize(width: abs(display.width), height: abs(display.height))
+				let tx = (renderSize.width - displaySize.width) / 2
+				let ty = (renderSize.height - displaySize.height) / 2
+
+				let instruction = AVMutableVideoCompositionInstruction()
+				instruction.timeRange = CMTimeRange(start: cursor, duration: asset.duration)
+
+				let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: compVideoTrack)
+				let t = preferredTransform.concatenating(CGAffineTransform(translationX: tx, y: ty))
+				layerInstruction.setTransform(t, at: cursor)
+				instruction.layerInstructions = [layerInstruction]
+				instructions.append(instruction)
+			}
+
 			cursor = cursor + asset.duration
 		}
 
-		// 拼接后统一转正（简单处理：使用第一段的 preferredTransform）
-		let firstTrack = try await assets[0].loadTracks(withMediaType: .video).first!
-		let preferredTransform = try await firstTrack.load(.preferredTransform)
-
-		let instruction = AVMutableVideoCompositionInstruction()
-		instruction.timeRange = CMTimeRange(start: .zero, duration: composition.duration)
-
-		let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: compVideoTrack)
-		layerInstruction.setTransform(preferredTransform, at: .zero)
-		instruction.layerInstructions = [layerInstruction]
-
 		let videoComposition = AVMutableVideoComposition()
-		videoComposition.instructions = [instruction]
-		videoComposition.renderSize = firstInfo.displaySize
+
+		if targetSize != nil {
+			videoComposition.instructions = instructions
+		} else {
+			let firstTrack = try await assets[0].loadTracks(withMediaType: .video).first!
+			let firstTransform = try await firstTrack.load(.preferredTransform)
+			let instruction = AVMutableVideoCompositionInstruction()
+			instruction.timeRange = CMTimeRange(start: .zero, duration: composition.duration)
+			let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: compVideoTrack)
+			layerInstruction.setTransform(firstTransform, at: .zero)
+			instruction.layerInstructions = [layerInstruction]
+			videoComposition.instructions = [instruction]
+		}
+
+		videoComposition.renderSize = renderSize
 		videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
 
 		try await export(
@@ -189,6 +295,113 @@ enum VideoToolkit {
 			outputURL: outputURL,
 			videoComposition: videoComposition
 		)
+	}
+
+	// MARK: - Image Processing
+
+	static func exportImageCroppedAndResized(
+		inputURL: URL,
+		outputURL: URL,
+		cropRect: CGRect?,
+		targetSize: CGSize?,
+		scaleMode: VideoScaleMode
+	) async throws {
+		guard cropRect != nil || targetSize != nil else {
+			throw VideoToolkitError.exportFailed("请至少启用裁剪或尺寸调整中的一项")
+		}
+
+		guard let source = CGImageSourceCreateWithURL(inputURL as CFURL, nil) else {
+			throw VideoToolkitError.exportFailed("无法读取图片文件")
+		}
+		guard let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+			throw VideoToolkitError.exportFailed("无法解码图片")
+		}
+
+		let imageSize = CGSize(width: image.width, height: image.height)
+		let crop = cropRect ?? CGRect(origin: .zero, size: imageSize)
+		guard crop.width > 2, crop.height > 2 else {
+			throw VideoToolkitError.exportFailed("裁剪区域太小")
+		}
+
+		let cropped: CGImage
+		if let cropRect, cropRect != CGRect(origin: .zero, size: imageSize) {
+			guard let c = image.cropping(to: crop) else {
+				throw VideoToolkitError.exportFailed("裁剪失败")
+			}
+			cropped = c
+		} else {
+			cropped = image
+		}
+
+		let finalImage: CGImage
+		if let target = targetSize {
+			guard let resized = scaleCGImageStatic(cropped, to: target, scaleMode: scaleMode) else {
+				throw VideoToolkitError.exportFailed("缩放失败")
+			}
+			finalImage = resized
+		} else {
+			finalImage = cropped
+		}
+
+		let uti = outputUTI(for: outputURL)
+		guard let dest = CGImageDestinationCreateWithURL(outputURL as CFURL, uti, 1, nil) else {
+			throw VideoToolkitError.exportFailed("无法创建输出文件")
+		}
+		CGImageDestinationAddImage(dest, finalImage, nil)
+		guard CGImageDestinationFinalize(dest) else {
+			throw VideoToolkitError.exportFailed("写入图片失败")
+		}
+	}
+
+	private static func outputUTI(for url: URL) -> CFString {
+		switch url.pathExtension.lowercased() {
+		case "jpg", "jpeg": return UTType.jpeg.identifier as CFString
+		case "png": return UTType.png.identifier as CFString
+		case "tiff", "tif": return UTType.tiff.identifier as CFString
+		case "bmp": return UTType.bmp.identifier as CFString
+		case "gif": return UTType.gif.identifier as CFString
+		case "heic": return UTType.heic.identifier as CFString
+		default: return UTType.png.identifier as CFString
+		}
+	}
+
+	static func scaleCGImageStatic(_ image: CGImage, to targetSize: CGSize, scaleMode: VideoScaleMode) -> CGImage? {
+		let srcSize = CGSize(width: image.width, height: image.height)
+		let sx = targetSize.width / max(srcSize.width, 1)
+		let sy = targetSize.height / max(srcSize.height, 1)
+
+		var drawRect: CGRect
+		switch scaleMode {
+		case .stretch:
+			drawRect = CGRect(origin: .zero, size: targetSize)
+		case .aspectFit:
+			let s = min(sx, sy)
+			let fitSize = CGSize(width: srcSize.width * s, height: srcSize.height * s)
+			drawRect = CGRect(
+				x: (targetSize.width - fitSize.width) / 2,
+				y: (targetSize.height - fitSize.height) / 2,
+				width: fitSize.width,
+				height: fitSize.height
+			)
+		}
+
+		let cs = image.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
+		let bpc = image.bitsPerComponent
+		let bitmapInfo = image.bitmapInfo
+
+		guard let ctx = CGContext(
+			data: nil,
+			width: Int(targetSize.width),
+			height: Int(targetSize.height),
+			bitsPerComponent: bpc,
+			bytesPerRow: 0,
+			space: cs,
+			bitmapInfo: bitmapInfo.rawValue
+		) else { return nil }
+
+		ctx.interpolationQuality = .high
+		ctx.draw(image, in: drawRect)
+		return ctx.makeImage()
 	}
 
 	// MARK: - Private
