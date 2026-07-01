@@ -1,46 +1,45 @@
 import AVFoundation
-import CoreGraphics
 
 actor AudioVideoToolkit {
     static let shared = AudioVideoToolkit()
-    
+
     private init() {}
-    
+
     struct TrackInfo {
         let url: URL
         let duration: Double
         let type: TrackType
-        
+
         enum TrackType {
             case video
             case audio
         }
     }
-    
+
     struct MergeSettings {
         var videoStartOffset: Double = 0
         var audioStartOffset: Double = 0
         var videoSpeed: Double = 1.0
         var audioSpeed: Double = 1.0
     }
-    
+
     func getTrackInfo(url: URL) async throws -> TrackInfo {
         let asset = AVURLAsset(url: url)
         let duration = try await asset.load(.duration)
-        
+
         let tracks = try await asset.loadTracks(withMediaType: .video)
         if !tracks.isEmpty {
             return TrackInfo(url: url, duration: duration.seconds, type: .video)
         }
-        
+
         let audioTracks = try await asset.loadTracks(withMediaType: .audio)
         if !audioTracks.isEmpty {
             return TrackInfo(url: url, duration: duration.seconds, type: .audio)
         }
-        
+
         throw NSError(domain: "AudioVideoToolkit", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unsupported file type"])
     }
-    
+
     func mergeAudioVideo(
         videoURL: URL,
         audioURL: URL,
@@ -50,10 +49,10 @@ actor AudioVideoToolkit {
     ) async throws {
         let videoAsset = AVURLAsset(url: videoURL)
         let audioAsset = AVURLAsset(url: audioURL)
-        
+
         let videoTracks = try await videoAsset.loadTracks(withMediaType: .video)
         let audioTracks = try await audioAsset.loadTracks(withMediaType: .audio)
-        
+
         guard let videoTrack = videoTracks.first, let audioTrack = audioTracks.first else {
             throw NSError(domain: "AudioVideoToolkit", code: -2, userInfo: [NSLocalizedDescriptionKey: "Failed to load tracks"])
         }
@@ -95,53 +94,53 @@ actor AudioVideoToolkit {
 
         try await export(composition: composition, outputURL: outputURL, progressHandler: progressHandler)
     }
-    
+
     func extractAudio(from videoURL: URL, outputURL: URL, progressHandler: @escaping (Double) -> Void) async throws {
         let asset = AVURLAsset(url: videoURL)
         let audioTracks = try await asset.loadTracks(withMediaType: .audio)
-        
+
         guard let audioTrack = audioTracks.first else {
             throw NSError(domain: "AudioVideoToolkit", code: -3, userInfo: [NSLocalizedDescriptionKey: "No audio track found"])
         }
-        
+
         let composition = AVMutableComposition()
         let audioCompTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-        
+
         let duration = try await asset.load(.duration)
         try audioCompTrack?.insertTimeRange(CMTimeRangeMake(start: .zero, duration: duration), of: audioTrack, at: .zero)
-        
+
         guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A) else {
             throw NSError(domain: "AudioVideoToolkit", code: -8, userInfo: [NSLocalizedDescriptionKey: "Failed to create audio export session"])
         }
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .m4a
-        
+
         try await performExport(session: exportSession, progressHandler: progressHandler)
     }
-    
+
     func extractVideo(from videoURL: URL, outputURL: URL, progressHandler: @escaping (Double) -> Void) async throws {
         let asset = AVURLAsset(url: videoURL)
         let videoTracks = try await asset.loadTracks(withMediaType: .video)
-        
+
         guard let videoTrack = videoTracks.first else {
             throw NSError(domain: "AudioVideoToolkit", code: -4, userInfo: [NSLocalizedDescriptionKey: "No video track found"])
         }
-        
+
         let composition = AVMutableComposition()
         let videoCompTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
-        
+
         let duration = try await asset.load(.duration)
         try videoCompTrack?.insertTimeRange(CMTimeRangeMake(start: .zero, duration: duration), of: videoTrack, at: .zero)
-        
+
         guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
             throw NSError(domain: "AudioVideoToolkit", code: -9, userInfo: [NSLocalizedDescriptionKey: "Failed to create video export session"])
         }
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mov
-        
+
         try await performExport(session: exportSession, progressHandler: progressHandler)
     }
-    
+
     private func export(
         composition: AVMutableComposition,
         outputURL: URL,
@@ -177,7 +176,7 @@ actor AudioVideoToolkit {
             let progressObserver = session.observe(\.progress) { _, _ in
                 progressHandler(Double(session.progress))
             }
-            
+
             session.exportAsynchronously {
                 progressObserver.invalidate()
                 if session.status == .completed {

@@ -86,7 +86,7 @@ struct DuplicatePhotoView: View {
 										Button("删除") {
 											deleteFile(url)
 										}
-										.foregroundColor(.red)
+										.foregroundStyle(.red)
 										.buttonStyle(.borderless)
 									}
 								}
@@ -167,7 +167,7 @@ struct DuplicatePhotoView: View {
 		alert.alertStyle = .warning
 		alert.addButton(withTitle: "删除")
 		alert.addButton(withTitle: "取消")
-		
+
 		if alert.runModal() == .alertFirstButtonReturn {
 			do {
 				try FileManager.default.removeItem(at: url)

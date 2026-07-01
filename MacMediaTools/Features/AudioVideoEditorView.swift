@@ -8,41 +8,41 @@ struct AudioVideoEditorView: View {
     @State private var audioURL: URL?
     @State private var videoTrack: TrackItem?
     @State private var audioTrack: TrackItem?
-    
+
     @State private var videoOffset: Double = 0
     @State private var audioOffset: Double = 0
     @State private var videoSpeed: Double = 1.0
     @State private var audioSpeed: Double = 1.0
-    
+
     @State private var timelineScale: Double = 1.0
     @State private var isPlaying = false
     @State private var currentTime: Double = 0
     @State private var previewPlayer: AVPlayer?
-    
+
     @State private var isExporting = false
     @State private var exportProgress: Double = 0
     @State private var outputURL: URL?
     @State private var errorMessage: String?
     @State private var successMessage: String?
-    
+
     @State private var undoStack: [EditAction] = []
     @State private var redoStack: [EditAction] = []
-    
+
     private let maxUndoSteps = 10
-    
+
     struct TrackItem: Identifiable {
         let id = UUID()
         let url: URL
         let name: String
         let duration: Double
         let type: TrackType
-        
+
         enum TrackType {
             case video
             case audio
         }
     }
-    
+
     enum EditAction {
         case setVideo(URL?)
         case setAudio(URL?)
@@ -51,29 +51,29 @@ struct AudioVideoEditorView: View {
         case setVideoSpeed(Double)
         case setAudioSpeed(Double)
     }
-    
+
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 16) {
                 HStack(spacing: 12) {
                     Spacer()
-                    
+
                     Button("撤销") {
                         undo()
                     }
                     .disabled(undoStack.isEmpty)
-                    
+
                     Button("重做") {
                         redo()
                     }
                     .disabled(redoStack.isEmpty)
                 }
-                
+
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("导入文件")
                             .font(.headline)
-                        
+
                         HStack(spacing: 12) {
                             OpenPanelButton(
                                 title: "选择视频…",
@@ -85,17 +85,17 @@ struct AudioVideoEditorView: View {
                                 }
                             }
                             .disabled(isExporting)
-                            
+
                             if let videoTrack {
                                 Button("移除") {
                                     addAction(.setVideo(videoTrack.url))
                                     self.videoTrack = nil
                                     videoURL = nil
                                 }
-                                .foregroundColor(.red)
+                                .foregroundStyle(.red)
                             }
                         }
-                        
+
                         HStack(spacing: 12) {
                             OpenPanelButton(
                                 title: "选择音频…",
@@ -107,24 +107,24 @@ struct AudioVideoEditorView: View {
                                 }
                             }
                             .disabled(isExporting)
-                            
+
                             if let audioTrack {
                                 Button("移除") {
                                     addAction(.setAudio(audioTrack.url))
                                     self.audioTrack = nil
                                     audioURL = nil
                                 }
-                                .foregroundColor(.red)
+                                .foregroundStyle(.red)
                             }
                         }
                     }
-                    
+
                     Spacer()
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text("速度控制")
                             .font(.headline)
-                        
+
                         HStack(spacing: 12) {
                             Text("视频速度")
                             Slider(value: $videoSpeed, in: 0.5...2.0, step: 0.1)
@@ -133,7 +133,7 @@ struct AudioVideoEditorView: View {
                             Text("\(videoSpeed, specifier: "%.1f")x")
                                 .monospaced()
                         }
-                        
+
                         HStack(spacing: 12) {
                             Text("音频速度")
                             Slider(value: $audioSpeed, in: 0.5...2.0, step: 0.1)
@@ -144,13 +144,13 @@ struct AudioVideoEditorView: View {
                         }
                     }
                 }
-                
+
                 Divider()
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("轨道编辑区")
                         .font(.headline)
-                    
+
                     VStack(spacing: 4) {
                         if let videoTrack {
                             TrackRow(
@@ -161,7 +161,7 @@ struct AudioVideoEditorView: View {
                                 color: .blue
                             )
                         }
-                        
+
                         if let audioTrack {
                             TrackRow(
                                 title: "音频轨道",
@@ -173,48 +173,48 @@ struct AudioVideoEditorView: View {
                         }
                     }
                 }
-                
+
                 Divider()
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 12) {
                         Text("时间轴")
                             .font(.headline)
-                        
+
                         Button("-") {
                             timelineScale = max(0.5, timelineScale - 0.25)
                         }
                         .frame(width: 30)
-                        
+
                         Text("\(timelineScale, specifier: "%.2f")x")
                             .monospaced()
                             .frame(width: 60)
-                        
+
                         Button("+") {
                             timelineScale = min(4.0, timelineScale + 0.25)
                         }
                         .frame(width: 30)
-                        
+
                         Spacer()
-                        
+
                         HStack(spacing: 8) {
                             Button("起始对齐") {
                                 alignTracks(to: .start)
                             }
                             .disabled(!canAlign)
-                            
+
                             Button("结束对齐") {
                                 alignTracks(to: .end)
                             }
                             .disabled(!canAlign)
-                            
+
                             Button("同步对齐") {
                                 alignTracks(to: .sync)
                             }
                             .disabled(!canAlign)
                         }
                     }
-                    
+
                     TimelineView(
                         videoTrack: videoTrack,
                         audioTrack: audioTrack,
@@ -225,13 +225,13 @@ struct AudioVideoEditorView: View {
                     )
                     .frame(height: 80)
                 }
-                
+
                 Divider()
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("预览")
                         .font(.headline)
-                    
+
                     if let previewPlayer {
                         VideoPlayer(player: previewPlayer)
                             .frame(maxHeight: 240)
@@ -244,28 +244,28 @@ struct AudioVideoEditorView: View {
                             .frame(maxWidth: .infinity, minHeight: 160)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
                     }
-                    
+
                     HStack(spacing: 12) {
                         Button(isPlaying ? "暂停" : "播放") {
                             togglePlayback()
                         }
                         .disabled(videoTrack == nil)
-                        
+
                         Slider(value: $currentTime, in: 0...maxDuration)
                             .disabled(videoTrack == nil)
-                        
+
                         Text(formatTime(currentTime))
                             .monospaced()
                             .frame(width: 60)
                     }
                 }
-                
+
                 Divider()
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("输出")
                         .font(.headline)
-                    
+
                     HStack(spacing: 12) {
                         OpenPanelButton(title: "选择输出目录…", mode: .folder) { urls in
                             if let url = urls.first {
@@ -274,12 +274,12 @@ struct AudioVideoEditorView: View {
                             }
                         }
                         .disabled(isExporting)
-                        
+
                         Text(outputURL?.path ?? "未选择输出路径")
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
-                    
+
                     HStack(spacing: 12) {
                         if isExporting {
                             ProgressView(value: exportProgress)
@@ -299,7 +299,7 @@ struct AudioVideoEditorView: View {
                             }
                             .disabled(!canMerge)
                         }
-                        
+
                         if let videoTrack {
                             Button("分离音频") {
                                 Task {
@@ -314,7 +314,7 @@ struct AudioVideoEditorView: View {
                             }
                             .disabled(isExporting)
                         }
-                        
+
                         if let videoTrack {
                             Button("分离视频") {
                                 Task {
@@ -331,14 +331,14 @@ struct AudioVideoEditorView: View {
                         }
                     }
                 }
-                
+
                 if let errorMessage {
                     Text(errorMessage)
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                 }
                 if let successMessage {
                     Text(successMessage)
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                 }
             }
             .padding()
@@ -348,20 +348,20 @@ struct AudioVideoEditorView: View {
         .scrollIndicators(.visible)
         .background(Color(NSColor.controlBackgroundColor))
     }
-    
+
     private var canMerge: Bool {
         videoTrack != nil && audioTrack != nil && outputURL != nil && !isExporting
     }
-    
+
     private var canAlign: Bool {
         videoTrack != nil && audioTrack != nil
     }
-    
+
     private var maxDuration: Double {
         guard let videoTrack, let audioTrack else { return 0 }
         return max(videoTrack.duration / videoSpeed, audioTrack.duration / audioSpeed)
     }
-    
+
     private func loadVideo(_ url: URL) {
         Task {
             do {
@@ -383,7 +383,7 @@ struct AudioVideoEditorView: View {
             }
         }
     }
-    
+
     private func loadAudio(_ url: URL) {
         Task {
             do {
@@ -404,13 +404,13 @@ struct AudioVideoEditorView: View {
             }
         }
     }
-    
+
     private func alignTracks(to alignment: AlignmentType) {
         addAction(.setVideoOffset(videoOffset))
         addAction(.setAudioOffset(audioOffset))
-        
+
         guard let videoTrack, let audioTrack else { return }
-        
+
         switch alignment {
         case .start:
             videoOffset = 0
@@ -428,26 +428,26 @@ struct AudioVideoEditorView: View {
             audioOffset = 0
         }
     }
-    
+
     enum AlignmentType {
         case start
         case end
         case sync
     }
-    
+
     private func mergeFiles() async {
         guard let videoURL, let audioURL, let outputURL else { return }
-        
+
         isExporting = true
         exportProgress = 0
-        
+
         let settings = AudioVideoToolkit.MergeSettings(
             videoStartOffset: videoOffset,
             audioStartOffset: audioOffset,
             videoSpeed: videoSpeed,
             audioSpeed: audioSpeed
         )
-        
+
         do {
             try await AudioVideoToolkit.shared.mergeAudioVideo(
                 videoURL: videoURL,
@@ -459,7 +459,7 @@ struct AudioVideoEditorView: View {
                     self.exportProgress = progress
                 }
             }
-            
+
             await MainActor.run {
                 successMessage = "合并成功！"
                 errorMessage = nil
@@ -470,21 +470,21 @@ struct AudioVideoEditorView: View {
                 errorMessage = "合并失败：\(error.localizedDescription)"
             }
         }
-        
+
         await MainActor.run {
             isExporting = false
         }
     }
-    
+
     private func extractAudio() async {
         guard let videoURL else { return }
-        
+
         isExporting = true
         exportProgress = 0
-        
+
         let baseName = videoURL.deletingPathExtension().lastPathComponent
         let output = videoURL.deletingLastPathComponent().appendingPathComponent("\(baseName).m4a")
-        
+
         do {
             try await AudioVideoToolkit.shared.extractAudio(
                 from: videoURL,
@@ -494,7 +494,7 @@ struct AudioVideoEditorView: View {
                     self.exportProgress = progress
                 }
             }
-            
+
             await MainActor.run {
                 successMessage = "音频分离成功！"
                 errorMessage = nil
@@ -505,21 +505,21 @@ struct AudioVideoEditorView: View {
                 errorMessage = "分离失败：\(error.localizedDescription)"
             }
         }
-        
+
         await MainActor.run {
             isExporting = false
         }
     }
-    
+
     private func extractVideo() async {
         guard let videoURL else { return }
-        
+
         isExporting = true
         exportProgress = 0
-        
+
         let baseName = videoURL.deletingPathExtension().lastPathComponent
         let output = videoURL.deletingLastPathComponent().appendingPathComponent("\(baseName)_novideo.mov")
-        
+
         do {
             try await AudioVideoToolkit.shared.extractVideo(
                 from: videoURL,
@@ -529,7 +529,7 @@ struct AudioVideoEditorView: View {
                     self.exportProgress = progress
                 }
             }
-            
+
             await MainActor.run {
                 successMessage = "视频分离成功！"
                 errorMessage = nil
@@ -540,15 +540,15 @@ struct AudioVideoEditorView: View {
                 errorMessage = "分离失败：\(error.localizedDescription)"
             }
         }
-        
+
         await MainActor.run {
             isExporting = false
         }
     }
-    
+
     private func togglePlayback() {
         guard let previewPlayer else { return }
-        
+
         if isPlaying {
             previewPlayer.pause()
         } else {
@@ -556,7 +556,7 @@ struct AudioVideoEditorView: View {
         }
         isPlaying.toggle()
     }
-    
+
     private func addAction(_ action: EditAction) {
         undoStack.append(action)
         if undoStack.count > maxUndoSteps {
@@ -564,12 +564,12 @@ struct AudioVideoEditorView: View {
         }
         redoStack.removeAll()
     }
-    
+
     private func undo() {
         guard let action = undoStack.popLast() else { return }
-        
+
         redoStack.append(action)
-        
+
         switch action {
         case .setVideo(let url):
             if let url {
@@ -595,12 +595,12 @@ struct AudioVideoEditorView: View {
             audioSpeed = speed
         }
     }
-    
+
     private func redo() {
         guard let action = redoStack.popLast() else { return }
-        
+
         undoStack.append(action)
-        
+
         switch action {
         case .setVideo(let url):
             if let url {
@@ -634,32 +634,32 @@ struct TrackRow: View {
     let duration: Double
     @Binding var offset: Double
     let color: Color
-    
+
     var body: some View {
         HStack(spacing: 12) {
             Text(title)
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .font(.subheadline)
-            
+
             Text(name)
                 .lineLimit(1)
                 .truncationMode(.middle)
-            
+
             Text(formatDuration(duration))
                 .monospaced()
                 .foregroundStyle(.secondary)
-            
+
             Text("偏移")
-            
+
             Slider(value: $offset, in: 0...duration, step: 0.1)
                 .frame(width: 150)
-            
+
             Text("\(offset, specifier: "%.1f")s")
                 .monospaced()
                 .frame(width: 50)
         }
     }
-    
+
     private func formatDuration(_ seconds: Double) -> String {
         let mins = Int(seconds / 60)
         let secs = Int(seconds.truncatingRemainder(dividingBy: 60))
@@ -674,7 +674,7 @@ struct TimelineView: View {
     let audioOffset: Double
     let scale: Double
     @Binding var currentTime: Double
-    
+
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
@@ -688,7 +688,7 @@ struct TimelineView: View {
                             scale: scale
                         )
                     }
-                    
+
                     if let audioTrack {
                         TrackBar(
                             duration: audioTrack.duration,
@@ -699,17 +699,17 @@ struct TimelineView: View {
                         )
                     }
                 }
-                
+
                 Divider()
                     .frame(height: 60)
-                
+
                 TimeRuler(maxDuration: maxDuration, scale: scale)
             }
         }
         .background(Color(nsColor: .controlBackgroundColor))
         .cornerRadius(8)
     }
-    
+
     private var maxDuration: Double {
         let videoDur = videoTrack?.duration ?? 0
         let audioDur = audioTrack?.duration ?? 0
@@ -723,20 +723,20 @@ struct TrackBar: View {
     let color: Color
     let label: String
     let scale: Double
-    
+
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
             Rectangle()
                 .fill(Color.gray.opacity(0.3))
                 .frame(width: offset * 100 * scale, height: 24)
-            
+
             Rectangle()
                 .fill(color)
                 .frame(width: duration * 100 * scale, height: 24)
-            
+
             Text(label)
                 .font(.caption)
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .padding(.leading, 4)
         }
     }
@@ -745,15 +745,15 @@ struct TrackBar: View {
 struct TimeRuler: View {
     let maxDuration: Double
     let scale: Double
-    
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(0...Int(maxDuration), id: \.self) { i in
                 VStack(alignment: .leading) {
                     Text("\(i)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                    
+                        .foregroundStyle(.secondary)
+
                     Rectangle()
                         .fill(.secondary)
                         .frame(width: 1, height: 40)

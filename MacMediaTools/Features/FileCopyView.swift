@@ -73,7 +73,7 @@ struct FileCopyView: View {
 									availableFiles.removeAll { $0.id == item.id }
 									selectedFiles.remove(item)
 								}
-								.foregroundColor(.red)
+								.foregroundStyle(.red)
 								.buttonStyle(.borderless)
 							}
 						}
@@ -159,7 +159,7 @@ struct FileCopyView: View {
 	private func processSelectedFiles(_ urls: [URL]) {
 		logText = ""
 		statusText = "正在处理选中的文件…"
-		
+
 		var files: [FileItem] = []
 		for url in urls {
 			let ext = url.pathExtension.lowercased()
@@ -168,10 +168,10 @@ struct FileCopyView: View {
 				files.append(FileItem(url: url, fileType: fileType))
 			}
 		}
-		
+
 		availableFiles = files
 		selectedFiles = Set(files)
-		
+
 		if files.isEmpty {
 			statusText = "未选择有效的图片或视频文件"
 		} else {

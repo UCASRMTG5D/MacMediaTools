@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import Foundation
 
 // MARK: - WorkManager
@@ -29,11 +28,12 @@ final class WorkManager: ObservableObject {
 		}
 
 		// Something else is running → show conflict dialog.
+		guard let running = currentWork else { return true }
 		let alert = NSAlert()
 		alert.messageText = "正在执行其他任务"
 		alert.informativeText = """
-			当前「\(currentWork!.rawValue)」正在运行。
-			
+			当前「\(running.rawValue)」正在运行。
+
 			请选择要如何处理：
 			"""
 		alert.addButton(withTitle: "打断当前任务")

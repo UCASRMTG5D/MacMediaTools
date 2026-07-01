@@ -146,7 +146,7 @@ struct VideoCropResizeView: View {
 						if let src = sourceSize {
 							Text("裁剪后: \(Int(src.width)) × \(Int(src.height))")
 								.font(.caption)
-								.foregroundColor(.secondary)
+								.foregroundStyle(.secondary)
 						}
 						Spacer()
 						Button("重置为全屏") {
@@ -159,19 +159,19 @@ struct VideoCropResizeView: View {
 					HStack(spacing: 8) {
 						Text("裁剪宽高")
 							.font(.caption)
-							.foregroundColor(.secondary)
+							.foregroundStyle(.secondary)
 						TextField("宽", text: $cropWidthText)
 							.frame(width: 80)
 							.textFieldStyle(.roundedBorder)
 						Text("×")
 							.font(.caption)
-							.foregroundColor(.secondary)
+							.foregroundStyle(.secondary)
 						TextField("高", text: $cropHeightText)
 							.frame(width: 80)
 							.textFieldStyle(.roundedBorder)
 						Text("px")
 							.font(.caption)
-							.foregroundColor(.secondary)
+							.foregroundStyle(.secondary)
 
 						Button("应用") {
 							commitCropFields()
@@ -254,7 +254,7 @@ struct VideoCropResizeView: View {
 			if let src = sourceSize {
 				Text("来源分辨率: \(Int(src.width)) × \(Int(src.height))")
 					.font(.caption)
-					.foregroundColor(.secondary)
+					.foregroundStyle(.secondary)
 			}
 
 			Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
@@ -299,7 +299,7 @@ struct VideoCropResizeView: View {
 						VStack(spacing: 4) {
 							Text("裁剪后画面")
 								.font(.caption)
-								.foregroundColor(.secondary)
+								.foregroundStyle(.secondary)
 							if let src = sourceSize {
 								Image(nsImage: thumbnailFromDisplay())
 									.resizable()
@@ -310,12 +310,12 @@ struct VideoCropResizeView: View {
 						}
 
 						Image(systemName: "arrow.right")
-							.foregroundColor(.secondary)
+							.foregroundStyle(.secondary)
 
 						VStack(spacing: 4) {
 							Text("调整后 (\(Int(effectiveTargetSize?.width ?? 0))×\(Int(effectiveTargetSize?.height ?? 0)))")
 								.font(.caption)
-								.foregroundColor(.secondary)
+								.foregroundStyle(.secondary)
 							Image(nsImage: result)
 								.resizable()
 								.aspectRatio(contentMode: .fit)

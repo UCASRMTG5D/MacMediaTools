@@ -1,5 +1,4 @@
 import Foundation
-import AVFoundation
 
 enum MediaFileExtensions {
     static let photo: Set<String> = ["jpg", "jpeg", "png", "heic", "heif", "tif", "tiff", "bmp", "gif", "webp"]

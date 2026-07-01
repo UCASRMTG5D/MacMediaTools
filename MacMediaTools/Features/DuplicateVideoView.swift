@@ -1,5 +1,4 @@
 import AppKit
-import AVKit
 import SwiftUI
 
 // MARK: - Quick Mode Group
@@ -21,10 +20,6 @@ struct DuplicateVideoView: View {
 	@State private var ignoredQuickSet: Set<String> = []
 	@State private var ignoredDeepSet: Set<String> = []
 	@State private var expandedComparisonClusterID: String? = nil
-
-	private let videoExts: Set<String> = [
-		"mp4", "mov", "m4v", "avi", "mkv"
-	]
 
 	// MARK: - Computed
 
@@ -225,7 +220,7 @@ struct DuplicateVideoView: View {
 						Button("删除") {
 							deleteQuickFile(url)
 						}
-						.foregroundColor(.red)
+						.foregroundStyle(.red)
 						.buttonStyle(.borderless)
 					}
 				}
@@ -233,7 +228,7 @@ struct DuplicateVideoView: View {
 				Button("本次忽略") {
 					ignoreQuickGroup(group)
 				}
-				.foregroundColor(.orange)
+				.foregroundStyle(.orange)
 				.buttonStyle(.borderless)
 			}
 			.padding(.top, 6)
@@ -320,7 +315,7 @@ struct DuplicateVideoView: View {
 						Button("移到废纸篓") {
 							deleteDeepItem(item, from: cluster)
 						}
-						.foregroundColor(.red)
+						.foregroundStyle(.red)
 						.buttonStyle(.borderless)
 					}
 				}
@@ -328,7 +323,7 @@ struct DuplicateVideoView: View {
 				Button("本次忽略") {
 					ignoreDeepCluster(cluster)
 				}
-				.foregroundColor(.orange)
+				.foregroundStyle(.orange)
 				.buttonStyle(.borderless)
 			}
 			.padding(.top, 6)
