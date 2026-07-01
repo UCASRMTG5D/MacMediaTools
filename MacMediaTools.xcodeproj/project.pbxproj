@@ -21,14 +21,18 @@
 		AA000000000000000000010D /* DuplicateVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020D /* DuplicateVideoView.swift */; };
 		AA0000000000000000000111 /* FileCopyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000210 /* FileCopyView.swift */; };
 		AA0000000000000000000112 /* DuplicateDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000211 /* DuplicateDetector.swift */; };
-		AA0000000000000000000113 /* DuplicateMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000212 /* DuplicateMediaView.swift */; };
 		AA0000000000000000000114 /* AudioVideoToolkit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000213 /* AudioVideoToolkit.swift */; };
 		AA0000000000000000000115 /* AudioVideoEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000214 /* AudioVideoEditorView.swift */; };
 		AA0000000000000000000117 /* VideoScreenshotExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000215 /* VideoScreenshotExtractor.swift */; };
 		AA0000000000000000000118 /* VideoScreenshotExtractorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000216 /* VideoScreenshotExtractorView.swift */; };
+		AA0000000000000000000130 /* WorkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000223 /* WorkManager.swift */; };
+		AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000224 /* DuplicateVideoScanModel.swift */; };
 		AA0000000000000000000119 /* OperationLogManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000217 /* OperationLogManager.swift */; };
 		AA0000000000000000000120 /* VideoProgressSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000218 /* VideoProgressSlider.swift */; };
 		AA0000000000000000000126 /* MediaToolsUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000219 /* MediaToolsUtilities.swift */; };
+		AA0000000000000000000127 /* VideoHashCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000220 /* VideoHashCache.swift */; };
+		AA0000000000000000000128 /* SimilarVideoClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000221 /* SimilarVideoClusterer.swift */; };
+		AA0000000000000000000129 /* VideoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000222 /* VideoComparisonPanel.swift */; };
 		AA0000000000000000000110 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000301 /* Assets.xcassets */; };
 
 		AA0000000000000000000121 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000401 /* AVFoundation.framework */; };
@@ -55,7 +59,6 @@
 		AA000000000000000000020D /* DuplicateVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000210 /* FileCopyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCopyView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000211 /* DuplicateDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateDetector.swift; sourceTree = "<group>"; };
-		AA0000000000000000000212 /* DuplicateMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateMediaView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000213 /* AudioVideoToolkit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioVideoToolkit.swift; sourceTree = "<group>"; };
 		AA0000000000000000000214 /* AudioVideoEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioVideoEditorView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000215 /* VideoScreenshotExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoScreenshotExtractor.swift; sourceTree = "<group>"; };
@@ -63,6 +66,11 @@
 		AA0000000000000000000217 /* OperationLogManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationLogManager.swift; sourceTree = "<group>"; };
 		AA0000000000000000000218 /* VideoProgressSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProgressSlider.swift; sourceTree = "<group>"; };
 		AA0000000000000000000219 /* MediaToolsUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaToolsUtilities.swift; sourceTree = "<group>"; };
+		AA0000000000000000000220 /* VideoHashCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoHashCache.swift; sourceTree = "<group>"; };
+		AA0000000000000000000221 /* SimilarVideoClusterer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimilarVideoClusterer.swift; sourceTree = "<group>"; };
+		AA0000000000000000000223 /* WorkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkManager.swift; sourceTree = "<group>"; };
+		AA0000000000000000000224 /* DuplicateVideoScanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoScanModel.swift; sourceTree = "<group>"; };
+		AA0000000000000000000222 /* VideoComparisonPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoComparisonPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 
@@ -152,6 +160,7 @@
 			children = (
 				AA0000000000000000000204 /* OpenPanelButton.swift */,
 				AA0000000000000000000218 /* VideoProgressSlider.swift */,
+				AA0000000000000000000222 /* VideoComparisonPanel.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -167,6 +176,10 @@
 				AA0000000000000000000213 /* AudioVideoToolkit.swift */,
 				AA0000000000000000000215 /* VideoScreenshotExtractor.swift */,
 				AA0000000000000000000217 /* OperationLogManager.swift */,
+				AA0000000000000000000220 /* VideoHashCache.swift */,
+				AA0000000000000000000221 /* SimilarVideoClusterer.swift */,
+				AA0000000000000000000223 /* WorkManager.swift */,
+				AA0000000000000000000224 /* DuplicateVideoScanModel.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -181,7 +194,6 @@
 				AA000000000000000000020C /* DuplicatePhotoView.swift */,
 				AA000000000000000000020D /* DuplicateVideoView.swift */,
 				AA0000000000000000000210 /* FileCopyView.swift */,
-				AA0000000000000000000212 /* DuplicateMediaView.swift */,
 				AA0000000000000000000214 /* AudioVideoEditorView.swift */,
 				AA0000000000000000000216 /* VideoScreenshotExtractorView.swift */,
 			);
@@ -273,7 +285,6 @@
 				AA000000000000000000010D /* DuplicateVideoView.swift in Sources */,
 		AA0000000000000000000111 /* FileCopyView.swift in Sources */,
 				AA0000000000000000000112 /* DuplicateDetector.swift in Sources */,
-				AA0000000000000000000113 /* DuplicateMediaView.swift in Sources */,
 				AA0000000000000000000114 /* AudioVideoToolkit.swift in Sources */,
 				AA0000000000000000000115 /* AudioVideoEditorView.swift in Sources */,
 				AA0000000000000000000117 /* VideoScreenshotExtractor.swift in Sources */,
@@ -281,6 +292,11 @@
 				AA0000000000000000000118 /* VideoScreenshotExtractorView.swift in Sources */,
 				AA0000000000000000000119 /* OperationLogManager.swift in Sources */,
 				AA0000000000000000000126 /* MediaToolsUtilities.swift in Sources */,
+				AA0000000000000000000127 /* VideoHashCache.swift in Sources */,
+				AA0000000000000000000128 /* SimilarVideoClusterer.swift in Sources */,
+				AA0000000000000000000130 /* WorkManager.swift in Sources */,
+				AA0000000000000000000129 /* VideoComparisonPanel.swift in Sources */,
+				AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

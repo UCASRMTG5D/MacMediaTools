@@ -34,76 +34,75 @@ struct VideoConcatView: View {
 	}
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			Text("视频片段整合")
-				.font(.title2)
+		ScrollView {
+			VStack(alignment: .leading, spacing: 14) {
+				HStack(spacing: 10) {
+					OpenPanelButton(
+						title: isLoading ? "加载中…" : "批量选择视频…",
+						mode: .file(allowedTypes: [.movie], allowsMultipleSelection: true)
+					) { urls in
+						Task { await addVideos(urls) }
+					}
+					.disabled(isLoading || isWorking)
 
-			HStack(spacing: 10) {
-				OpenPanelButton(
-					title: isLoading ? "加载中…" : "批量选择视频…",
-					mode: .file(allowedTypes: [.movie], allowsMultipleSelection: true)
-				) { urls in
-					Task { await addVideos(urls) }
+					Button("清空") { videos.removeAll(); videoInfos.removeAll() }
+						.disabled(videos.isEmpty || isLoading || isWorking)
 				}
-				.disabled(isLoading || isWorking)
 
-				Button("清空") { videos.removeAll(); videoInfos.removeAll() }
-					.disabled(videos.isEmpty || isLoading || isWorking)
-			}
-
-			if isLoading {
-				HStack(spacing: 8) {
-					ProgressView()
-						.scaleEffect(0.8)
-					Text("正在加载视频文件…")
-						.foregroundStyle(.secondary)
-				}
-			}
-
-			Text("已选择：\(videos.count) 个（在列表里可拖动调整顺序）")
-				.foregroundStyle(.secondary)
-
-			List(selection: $selection) {
-				ForEach(videos, id: \.self) { url in
-					HStack {
-						Text(url.lastPathComponent)
-						if let info = videoInfos[url] {
-							Text("(\(Int(info.displaySize.width))×\(Int(info.displaySize.height)))")
-								.font(.caption)
-								.foregroundStyle(.secondary)
-						}
-						Spacer()
-						Text(url.deletingLastPathComponent().lastPathComponent)
+				if isLoading {
+					HStack(spacing: 8) {
+						ProgressView()
+							.scaleEffect(0.8)
+						Text("正在加载视频文件…")
 							.foregroundStyle(.secondary)
 					}
-					.lineLimit(1)
-					.truncationMode(.middle)
-					.tag(url)
-					.contextMenu {
-						Button("在 Finder 中显示") {
-							NSWorkspace.shared.activateFileViewerSelecting([url])
-						}
-						Button("删除") { delete(url) }
-					}
-					.onDrag {
-						draggingURL = url
-						return NSItemProvider(object: url as NSURL)
-					}
-					.onDrop(
-						of: [.fileURL],
-						delegate: VideoURLDropDelegate(
-							item: url,
-							videos: $videos,
-							draggingURL: $draggingURL,
-							videoInfos: $videoInfos
-						)
-					)
 				}
-				.onMove(perform: move)
-				.onDelete(perform: delete)
-			}
-			.frame(height: 280)
-			.onDeleteCommand(perform: deleteSelection)
+
+				Text("已选择：\(videos.count) 个（在列表里可拖动调整顺序）")
+					.foregroundStyle(.secondary)
+
+				List(selection: $selection) {
+					ForEach(videos, id: \.self) { url in
+						HStack {
+							Text(url.lastPathComponent)
+							if let info = videoInfos[url] {
+								Text("(\(Int(info.displaySize.width))×\(Int(info.displaySize.height)))")
+									.font(.caption)
+									.foregroundStyle(.secondary)
+							}
+							Spacer()
+							Text(url.deletingLastPathComponent().lastPathComponent)
+								.foregroundStyle(.secondary)
+						}
+						.lineLimit(1)
+						.truncationMode(.middle)
+						.tag(url)
+						.contextMenu {
+							Button("在 Finder 中显示") {
+								NSWorkspace.shared.activateFileViewerSelecting([url])
+							}
+							Button("删除") { delete(url) }
+						}
+						.onDrag {
+							draggingURL = url
+							return NSItemProvider(object: url as NSURL)
+						}
+						.onDrop(
+							of: [.fileURL],
+							delegate: VideoURLDropDelegate(
+								item: url,
+								videos: $videos,
+								draggingURL: $draggingURL,
+								videoInfos: $videoInfos
+							)
+						)
+					}
+					.onMove(perform: move)
+					.onDelete(perform: delete)
+				}
+				.frame(minHeight: 160)
+				.layoutPriority(1)
+				.onDeleteCommand(perform: deleteSelection)
 
 			if videos.count >= 2 {
 				targetResizeSection
@@ -135,7 +134,15 @@ struct VideoConcatView: View {
 
 			HStack(spacing: 12) {
 				Button(isWorking ? "拼接中…" : "开始拼接") {
-					Task { await run() }
+					Task {
+						guard await WorkManager.shared.requestStart(.videoConcat) else { return }
+						isWorking = true
+						defer {
+							isWorking = false
+							WorkManager.shared.finishWork(.videoConcat)
+						}
+						await run()
+					}
 				}
 				.disabled(isWorking || isLoading || videos.count < 2)
 
@@ -167,7 +174,13 @@ struct VideoConcatView: View {
 
 			Spacer()
 		}
+		.padding()
+		.frame(maxWidth: .infinity, alignment: .leading)
 	}
+	.frame(maxWidth: .infinity, maxHeight: .infinity)
+	.scrollIndicators(.visible)
+	.background(Color(NSColor.controlBackgroundColor))
+}
 
 	@ViewBuilder
 	private var targetResizeSection: some View {

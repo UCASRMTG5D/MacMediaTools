@@ -6,7 +6,7 @@ struct MacMediaToolsApp: App {
 		WindowGroup {
 			RootView()
 		}
-		.windowStyle(.titleBar)
+		// .windowStyle(.titleBar) — removed to resolve toolbar collapse with NavigationSplitView
 	}
 }
 

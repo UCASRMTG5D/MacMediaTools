@@ -20,9 +20,6 @@ struct FileCopyView: View {
 	var body: some View {
 		ScrollView {
 			VStack(alignment: .leading, spacing: 16) {
-				Text("文件复制工具")
-					.font(.title2)
-
 				VStack(alignment: .leading, spacing: 8) {
 					HStack {
 						OpenPanelButton(title: "选择源文件…", mode: .mediaFiles) { urls in
@@ -80,7 +77,7 @@ struct FileCopyView: View {
 								.buttonStyle(.borderless)
 							}
 						}
-						.frame(height: 200)
+						.frame(minHeight: 120)
 						.background(Color(nsColor: .controlBackgroundColor))
 						.cornerRadius(8)
 					}
@@ -88,13 +85,18 @@ struct FileCopyView: View {
 
 				HStack(spacing: 12) {
 					Button(isCopying ? "复制中…" : "开始复制") {
-						Task { await startCopy() }
+						Task {
+							guard await WorkManager.shared.requestStart(.fileCopy) else { return }
+							isCopying = true
+							defer { WorkManager.shared.finishWork(.fileCopy) }
+							await startCopy()
+						}
 					}
 					.disabled(isCopying || selectedFiles.isEmpty || destFolderURL == nil)
 
 					if isCopying {
 						ProgressView(value: copyProgress)
-							.frame(width: 150)
+							.frame(maxWidth: 150)
 						Text("\(Int(copyProgress * 100))%")
 							.monospacedDigit()
 							.foregroundStyle(.secondary)
@@ -147,7 +149,11 @@ struct FileCopyView: View {
 				}
 			}
 			.padding()
+			.frame(maxWidth: .infinity, alignment: .leading)
 		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity)
+		.scrollIndicators(.visible)
+		.background(Color(NSColor.controlBackgroundColor))
 	}
 
 	private func processSelectedFiles(_ urls: [URL]) {

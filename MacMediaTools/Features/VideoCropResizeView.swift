@@ -72,7 +72,6 @@ struct VideoCropResizeView: View {
 	var body: some View {
 		ScrollView(.vertical, showsIndicators: true) {
 			VStack(alignment: .leading, spacing: 16) {
-				titleSection
 				fileSelectionSection
 				infoSection
 
@@ -91,16 +90,10 @@ struct VideoCropResizeView: View {
 			.frame(maxWidth: .infinity)
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
-		.navigationTitle("宽高调整")
 		.background(Color(NSColor.controlBackgroundColor))
 	}
 
 	// MARK: - Subviews
-
-	private var titleSection: some View {
-		Text("宽高调整")
-			.font(.title2)
-	}
 
 	private var fileSelectionSection: some View {
 		HStack(spacing: 12) {
@@ -372,9 +365,17 @@ struct VideoCropResizeView: View {
 	private var actionButtons: some View {
 		VStack(alignment: .leading, spacing: 8) {
 			HStack(spacing: 12) {
-				Button(isWorking ? "处理中…" : "开始导出") {
-					Task { await run() }
+			Button(isWorking ? "处理中…" : "开始导出") {
+				Task {
+					guard await WorkManager.shared.requestStart(.videoCropResize) else { return }
+					isWorking = true
+					defer {
+						isWorking = false
+						WorkManager.shared.finishWork(.videoCropResize)
+					}
+					await run()
 				}
+			}
 				.disabled(!canExport)
 
 				if let lastOutputURL {

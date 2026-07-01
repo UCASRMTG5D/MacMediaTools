@@ -230,7 +230,15 @@ struct VideoScreenshotExtractorView: View {
                         if isProcessing {
                             togglePause()
                         } else {
-                            Task { await extractScreenshots() }
+                            Task {
+                                guard await WorkManager.shared.requestStart(.keyFrameExtract) else { return }
+                                isProcessing = true
+                                defer {
+                                    isProcessing = false
+                                    WorkManager.shared.finishWork(.keyFrameExtract)
+                                }
+                                await extractScreenshots()
+                            }
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -249,7 +257,6 @@ struct VideoScreenshotExtractorView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollIndicators(.visible)
-        .navigationTitle("批量截图")
         .background(Color(NSColor.controlBackgroundColor))
     }
 

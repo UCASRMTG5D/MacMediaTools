@@ -19,50 +19,55 @@ struct DuplicatePhotoView: View {
 	private let photoExts: Set<String> = MediaFileExtensions.photo
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			Text("重复照片检测")
-				.font(.title2)
-
-			HStack {
-				OpenPanelButton(title: "选择文件夹…", mode: .folder) { urls in
-					folderURL = urls.first
-					groups = []
-					errorMessage = nil
+		ScrollView {
+			VStack(alignment: .leading, spacing: 14) {
+				HStack {
+					OpenPanelButton(title: "选择文件夹…", mode: .folder) { urls in
+						folderURL = urls.first
+						groups = []
+						errorMessage = nil
+					}
+					.disabled(isWorking)
+					Text(folderURL?.path ?? "未选择")
+						.lineLimit(1)
+						.truncationMode(.middle)
 				}
-				.disabled(isWorking)
-				Text(folderURL?.path ?? "未选择")
-					.lineLimit(1)
-					.truncationMode(.middle)
-			}
 
-			Text(statusText)
-				.foregroundStyle(.secondary)
+				Text(statusText)
+					.foregroundStyle(.secondary)
 
-			HStack(spacing: 12) {
+				HStack(spacing: 12) {
 				Button(isWorking ? "扫描中…" : "开始扫描") {
-					Task { await run() }
+					Task {
+						guard await WorkManager.shared.requestStart(.duplicatePhotos) else { return }
+						isWorking = true
+						defer {
+							isWorking = false
+							WorkManager.shared.finishWork(.duplicatePhotos)
+						}
+						await run()
+					}
 				}
-				.disabled(isWorking || folderURL == nil)
+					.disabled(isWorking || folderURL == nil)
 
-				if isWorking {
-					ProgressView()
-					Text("\(processedCount)/\(totalCount)")
-						.monospacedDigit()
-						.foregroundStyle(.secondary)
+					if isWorking {
+						ProgressView()
+						Text("\(processedCount)/\(totalCount)")
+							.monospacedDigit()
+							.foregroundStyle(.secondary)
+					}
 				}
-			}
 
-			if let errorMessage {
-				Text(errorMessage)
-					.foregroundStyle(.red)
-			}
+				if let errorMessage {
+					Text(errorMessage)
+						.foregroundStyle(.red)
+				}
 
-			Divider()
+				Divider()
 
-			Text("重复组数：\(groups.count)")
-				.foregroundStyle(.secondary)
+				Text("重复组数：\(groups.count)")
+					.foregroundStyle(.secondary)
 
-			ScrollView {
 				LazyVStack(alignment: .leading, spacing: 10) {
 					ForEach(groups) { group in
 						DisclosureGroup {
@@ -97,9 +102,12 @@ struct DuplicatePhotoView: View {
 					}
 				}
 			}
-
-			Spacer()
+			.padding()
+			.frame(maxWidth: .infinity, alignment: .leading)
 		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity)
+		.scrollIndicators(.visible)
+		.background(Color(NSColor.controlBackgroundColor))
 	}
 
 	@MainActor

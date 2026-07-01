@@ -3,6 +3,10 @@ import SwiftUI
 struct RootView: View {
 	@State private var selection: ToolFeature? = .videoCropResize
 
+	/// Lives here so DuplicateVideoView's scan continues running
+	/// when the user switches to another feature and back.
+	@StateObject private var duplicateVideoScan = DuplicateVideoScanModel()
+
 	var body: some View {
 		NavigationSplitView {
 			List(ToolFeature.allCases, id: \.self, selection: $selection) { item in
@@ -24,17 +28,16 @@ struct RootView: View {
 				case .duplicatePhotos:
 					DuplicatePhotoView()
 				case .duplicateVideos:
-					DuplicateVideoView()
-				case .duplicateMedia:
-					DuplicateMediaView()
+					DuplicateVideoView(scanModel: duplicateVideoScan)
 				case .fileCopy:
 					FileCopyView()
-				case .none:
-					Text("请选择左侧功能")
+				case nil:
+					Color.clear
 				}
 			}
-			.padding()
+			.frame(maxWidth: .infinity, maxHeight: .infinity)
+			.navigationTitle(selection?.rawValue ?? "")
 		}
-		.frame(minWidth: 980, minHeight: 640)
+		.frame(minWidth: 1000, minHeight: 700)
 	}
 }

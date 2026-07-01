@@ -53,270 +53,300 @@ struct AudioVideoEditorView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 12) {
-                Text("音视频处理")
-                    .font(.title2)
-                
-                Spacer()
-                
-                Button("撤销") {
-                    undo()
-                }
-                .disabled(undoStack.isEmpty)
-                
-                Button("重做") {
-                    redo()
-                }
-                .disabled(redoStack.isEmpty)
-            }
-            
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("导入文件")
-                        .font(.headline)
-                    
-                    HStack(spacing: 12) {
-                        OpenPanelButton(
-                            title: "选择视频…",
-                            mode: .file(allowedTypes: [.movie], allowsMultipleSelection: false)
-                        ) { urls in
-                            if let url = urls.first {
-                                addAction(.setVideo(videoURL))
-                                loadVideo(url)
-                            }
-                        }
-                        .disabled(isExporting)
-                        
-                        if let videoTrack {
-                            Button("移除") {
-                                addAction(.setVideo(videoTrack.url))
-                                self.videoTrack = nil
-                                videoURL = nil
-                            }
-                            .foregroundColor(.red)
-                        }
-                    }
-                    
-                    HStack(spacing: 12) {
-                        OpenPanelButton(
-                            title: "选择音频…",
-                            mode: .file(allowedTypes: [.audio], allowsMultipleSelection: false)
-                        ) { urls in
-                            if let url = urls.first {
-                                addAction(.setAudio(audioURL))
-                                loadAudio(url)
-                            }
-                        }
-                        .disabled(isExporting)
-                        
-                        if let audioTrack {
-                            Button("移除") {
-                                addAction(.setAudio(audioTrack.url))
-                                self.audioTrack = nil
-                                audioURL = nil
-                            }
-                            .foregroundColor(.red)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("速度控制")
-                        .font(.headline)
-                    
-                    HStack(spacing: 12) {
-                        Text("视频速度")
-                        Slider(value: $videoSpeed, in: 0.5...2.0, step: 0.1)
-                            .frame(width: 150)
-                            .disabled(isExporting)
-                        Text("\(videoSpeed, specifier: "%.1f")x")
-                            .monospaced()
-                    }
-                    
-                    HStack(spacing: 12) {
-                        Text("音频速度")
-                        Slider(value: $audioSpeed, in: 0.5...2.0, step: 0.1)
-                            .frame(width: 150)
-                            .disabled(isExporting)
-                        Text("\(audioSpeed, specifier: "%.1f")x")
-                            .monospaced()
-                    }
-                }
-            }
-            
-            Divider()
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("轨道编辑区")
-                    .font(.headline)
-                
-                VStack(spacing: 4) {
-                    if let videoTrack {
-                        TrackRow(
-                            title: "视频轨道",
-                            name: videoTrack.name,
-                            duration: videoTrack.duration,
-                            offset: $videoOffset,
-                            color: .blue
-                        )
-                    }
-                    
-                    if let audioTrack {
-                        TrackRow(
-                            title: "音频轨道",
-                            name: audioTrack.name,
-                            duration: audioTrack.duration,
-                            offset: $audioOffset,
-                            color: .green
-                        )
-                    }
-                }
-            }
-            
-            Divider()
-            
-            VStack(alignment: .leading, spacing: 8) {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(spacing: 16) {
                 HStack(spacing: 12) {
-                    Text("时间轴")
-                        .font(.headline)
+                    Spacer()
                     
-                    Button("-") {
-                        timelineScale = max(0.5, timelineScale - 0.25)
+                    Button("撤销") {
+                        undo()
                     }
-                    .frame(width: 30)
+                    .disabled(undoStack.isEmpty)
                     
-                    Text("\(timelineScale, specifier: "%.2f")x")
-                        .monospaced()
-                        .frame(width: 60)
-                    
-                    Button("+") {
-                        timelineScale = min(4.0, timelineScale + 0.25)
+                    Button("重做") {
+                        redo()
                     }
-                    .frame(width: 30)
+                    .disabled(redoStack.isEmpty)
+                }
+                
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("导入文件")
+                            .font(.headline)
+                        
+                        HStack(spacing: 12) {
+                            OpenPanelButton(
+                                title: "选择视频…",
+                                mode: .file(allowedTypes: [.movie], allowsMultipleSelection: false)
+                            ) { urls in
+                                if let url = urls.first {
+                                    addAction(.setVideo(videoURL))
+                                    loadVideo(url)
+                                }
+                            }
+                            .disabled(isExporting)
+                            
+                            if let videoTrack {
+                                Button("移除") {
+                                    addAction(.setVideo(videoTrack.url))
+                                    self.videoTrack = nil
+                                    videoURL = nil
+                                }
+                                .foregroundColor(.red)
+                            }
+                        }
+                        
+                        HStack(spacing: 12) {
+                            OpenPanelButton(
+                                title: "选择音频…",
+                                mode: .file(allowedTypes: [.audio], allowsMultipleSelection: false)
+                            ) { urls in
+                                if let url = urls.first {
+                                    addAction(.setAudio(audioURL))
+                                    loadAudio(url)
+                                }
+                            }
+                            .disabled(isExporting)
+                            
+                            if let audioTrack {
+                                Button("移除") {
+                                    addAction(.setAudio(audioTrack.url))
+                                    self.audioTrack = nil
+                                    audioURL = nil
+                                }
+                                .foregroundColor(.red)
+                            }
+                        }
+                    }
                     
                     Spacer()
                     
-                    HStack(spacing: 8) {
-                        Button("起始对齐") {
-                            alignTracks(to: .start)
-                        }
-                        .disabled(!canAlign)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("速度控制")
+                            .font(.headline)
                         
-                        Button("结束对齐") {
-                            alignTracks(to: .end)
+                        HStack(spacing: 12) {
+                            Text("视频速度")
+                            Slider(value: $videoSpeed, in: 0.5...2.0, step: 0.1)
+                                .frame(width: 150)
+                                .disabled(isExporting)
+                            Text("\(videoSpeed, specifier: "%.1f")x")
+                                .monospaced()
                         }
-                        .disabled(!canAlign)
                         
-                        Button("同步对齐") {
-                            alignTracks(to: .sync)
+                        HStack(spacing: 12) {
+                            Text("音频速度")
+                            Slider(value: $audioSpeed, in: 0.5...2.0, step: 0.1)
+                                .frame(width: 150)
+                                .disabled(isExporting)
+                            Text("\(audioSpeed, specifier: "%.1f")x")
+                                .monospaced()
                         }
-                        .disabled(!canAlign)
                     }
                 }
                 
-                TimelineView(
-                    videoTrack: videoTrack,
-                    audioTrack: audioTrack,
-                    videoOffset: videoOffset,
-                    audioOffset: audioOffset,
-                    scale: timelineScale,
-                    currentTime: $currentTime
-                )
-                .frame(height: 80)
-            }
-            
-            Divider()
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("预览")
-                    .font(.headline)
+                Divider()
                 
-                if let previewPlayer {
-                    VideoPlayer(player: previewPlayer)
-                        .frame(height: 240)
-                        .cornerRadius(8)
-                        .onDisappear {
-                            previewPlayer.pause()
-                        }
-                } else {
-                    Text("（预览区域）")
-                        .frame(maxWidth: .infinity, minHeight: 240)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
-                }
-                
-                HStack(spacing: 12) {
-                    Button(isPlaying ? "暂停" : "播放") {
-                        togglePlayback()
-                    }
-                    .disabled(videoTrack == nil)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("轨道编辑区")
+                        .font(.headline)
                     
-                    Slider(value: $currentTime, in: 0...maxDuration)
+                    VStack(spacing: 4) {
+                        if let videoTrack {
+                            TrackRow(
+                                title: "视频轨道",
+                                name: videoTrack.name,
+                                duration: videoTrack.duration,
+                                offset: $videoOffset,
+                                color: .blue
+                            )
+                        }
+                        
+                        if let audioTrack {
+                            TrackRow(
+                                title: "音频轨道",
+                                name: audioTrack.name,
+                                duration: audioTrack.duration,
+                                offset: $audioOffset,
+                                color: .green
+                            )
+                        }
+                    }
+                }
+                
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 12) {
+                        Text("时间轴")
+                            .font(.headline)
+                        
+                        Button("-") {
+                            timelineScale = max(0.5, timelineScale - 0.25)
+                        }
+                        .frame(width: 30)
+                        
+                        Text("\(timelineScale, specifier: "%.2f")x")
+                            .monospaced()
+                            .frame(width: 60)
+                        
+                        Button("+") {
+                            timelineScale = min(4.0, timelineScale + 0.25)
+                        }
+                        .frame(width: 30)
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 8) {
+                            Button("起始对齐") {
+                                alignTracks(to: .start)
+                            }
+                            .disabled(!canAlign)
+                            
+                            Button("结束对齐") {
+                                alignTracks(to: .end)
+                            }
+                            .disabled(!canAlign)
+                            
+                            Button("同步对齐") {
+                                alignTracks(to: .sync)
+                            }
+                            .disabled(!canAlign)
+                        }
+                    }
+                    
+                    TimelineView(
+                        videoTrack: videoTrack,
+                        audioTrack: audioTrack,
+                        videoOffset: videoOffset,
+                        audioOffset: audioOffset,
+                        scale: timelineScale,
+                        currentTime: $currentTime
+                    )
+                    .frame(height: 80)
+                }
+                
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("预览")
+                        .font(.headline)
+                    
+                    if let previewPlayer {
+                        VideoPlayer(player: previewPlayer)
+                            .frame(maxHeight: 240)
+                            .cornerRadius(8)
+                            .onDisappear {
+                                previewPlayer.pause()
+                            }
+                    } else {
+                        Text("（预览区域）")
+                            .frame(maxWidth: .infinity, minHeight: 160)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
+                    }
+                    
+                    HStack(spacing: 12) {
+                        Button(isPlaying ? "暂停" : "播放") {
+                            togglePlayback()
+                        }
                         .disabled(videoTrack == nil)
+                        
+                        Slider(value: $currentTime, in: 0...maxDuration)
+                            .disabled(videoTrack == nil)
+                        
+                        Text(formatTime(currentTime))
+                            .monospaced()
+                            .frame(width: 60)
+                    }
+                }
+                
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("输出")
+                        .font(.headline)
                     
-                    Text(formatTime(currentTime))
-                        .monospaced()
-                        .frame(width: 60)
-                }
-            }
-            
-            Divider()
-            
-            HStack(spacing: 12) {
-                OpenPanelButton(title: "选择输出目录…", mode: .folder) { urls in
-                    if let url = urls.first {
-                        let fileName = videoTrack?.name.components(separatedBy: ".").first ?? "merged"
-                        outputURL = url.appendingPathComponent("\(fileName)_merged.mov")
+                    HStack(spacing: 12) {
+                        OpenPanelButton(title: "选择输出目录…", mode: .folder) { urls in
+                            if let url = urls.first {
+                                let fileName = videoTrack?.name.components(separatedBy: ".").first ?? "merged"
+                                outputURL = url.appendingPathComponent("\(fileName)_merged.mov")
+                            }
+                        }
+                        .disabled(isExporting)
+                        
+                        Text(outputURL?.path ?? "未选择输出路径")
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    
+                    HStack(spacing: 12) {
+                        if isExporting {
+                            ProgressView(value: exportProgress)
+                                .frame(maxWidth: 200)
+                            Text("\(Int(exportProgress * 100))%")
+                        } else {
+                            Button("开始合并") {
+                                Task {
+                                    guard await WorkManager.shared.requestStart(.audioVideoEdit) else { return }
+                                    isExporting = true
+                                    defer {
+                                        isExporting = false
+                                        WorkManager.shared.finishWork(.audioVideoEdit)
+                                    }
+                                    await mergeFiles()
+                                }
+                            }
+                            .disabled(!canMerge)
+                        }
+                        
+                        if let videoTrack {
+                            Button("分离音频") {
+                                Task {
+                                    guard await WorkManager.shared.requestStart(.audioVideoEdit) else { return }
+                                    isExporting = true
+                                    defer {
+                                        isExporting = false
+                                        WorkManager.shared.finishWork(.audioVideoEdit)
+                                    }
+                                    await extractAudio()
+                                }
+                            }
+                            .disabled(isExporting)
+                        }
+                        
+                        if let videoTrack {
+                            Button("分离视频") {
+                                Task {
+                                    guard await WorkManager.shared.requestStart(.audioVideoEdit) else { return }
+                                    isExporting = true
+                                    defer {
+                                        isExporting = false
+                                        WorkManager.shared.finishWork(.audioVideoEdit)
+                                    }
+                                    await extractVideo()
+                                }
+                            }
+                            .disabled(isExporting)
+                        }
                     }
                 }
-                .disabled(isExporting)
                 
-                Text(outputURL?.path ?? "未选择输出路径")
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                
-                Spacer()
-                
-                if isExporting {
-                    ProgressView(value: exportProgress)
-                        .frame(width: 150)
-                    Text("\(Int(exportProgress * 100))%")
-                } else {
-                    Button("开始合并") {
-                        Task { await mergeFiles() }
-                    }
-                    .disabled(!canMerge)
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
                 }
-                
-                if let videoTrack {
-                    Button("分离音频") {
-                        Task { await extractAudio() }
-                    }
-                    .disabled(isExporting)
-                }
-                
-                if let videoTrack {
-                    Button("分离视频") {
-                        Task { await extractVideo() }
-                    }
-                    .disabled(isExporting)
+                if let successMessage {
+                    Text(successMessage)
+                        .foregroundColor(.green)
                 }
             }
-            
-            if let errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-            }
-            if let successMessage {
-                Text(successMessage)
-                    .foregroundColor(.green)
-            }
-            
-            Spacer()
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scrollIndicators(.visible)
+        .background(Color(NSColor.controlBackgroundColor))
     }
     
     private var canMerge: Bool {
