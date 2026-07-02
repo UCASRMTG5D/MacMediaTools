@@ -19,12 +19,16 @@ struct VideoConcatView: View {
 	@State private var lastOutputURL: URL?
 	@State private var errorMessage: String?
 	@State private var showDeleteConfirmation = false
+	@State private var computedMaxSize: CGSize? = nil
 
-	private var computedMaxSize: CGSize? {
+	private func recalcMaxSize() {
 		let widths = videoInfos.values.map(\.displaySize.width)
 		let heights = videoInfos.values.map(\.displaySize.height)
-		guard let mw = widths.max(), let mh = heights.max(), mw > 0, mh > 0 else { return nil }
-		return CGSize(width: mw, height: mh)
+		guard let mw = widths.max(), let mh = heights.max(), mw > 0, mh > 0 else {
+			computedMaxSize = nil
+			return
+		}
+		computedMaxSize = CGSize(width: mw, height: mh)
 	}
 
 	private var resolutionsDiffer: Bool {
@@ -271,6 +275,8 @@ struct VideoConcatView: View {
 
 			isLoading = false
 		}
+
+		recalcMaxSize()
 	}
 
 	private func resetTargetSizeToMax() {
@@ -290,6 +296,7 @@ struct VideoConcatView: View {
 			videoInfos.removeValue(forKey: url)
 			selection.remove(url)
 		}
+		recalcMaxSize()
 	}
 
 	private func deleteSelection() {
@@ -302,6 +309,7 @@ struct VideoConcatView: View {
 			videoInfos.removeValue(forKey: url)
 		}
 		selection.removeAll()
+		recalcMaxSize()
 	}
 
 	private func delete(_ url: URL) {
@@ -309,6 +317,7 @@ struct VideoConcatView: View {
 		videos.remove(at: index)
 		videoInfos.removeValue(forKey: url)
 		selection.remove(url)
+		recalcMaxSize()
 	}
 
 	private func buildOutputURL() -> URL? {
@@ -359,6 +368,7 @@ struct VideoConcatView: View {
 		videoInfos.removeAll()
 		selection.removeAll()
 		lastOutputURL = nil
+		computedMaxSize = nil
 		if failedCount == 0 {
 			errorMessage = nil
 		} else {

@@ -76,12 +76,46 @@ struct VideoCropResizeView: View {
 				infoSection
 
 				if inputURL != nil {
-					cropSection
-					resizeSection
-					stretchPreviewSection
-					Divider()
-					outputSection
-					actionButtons
+					CropSettingsView(
+						enableCrop: $enableCrop,
+						normalizedRect: $normalizedRect,
+						cropWidthText: $cropWidthText,
+						cropHeightText: $cropHeightText,
+						isSyncingCropField: $isSyncingCropField,
+						player: player,
+						cachedCGImage: cachedCGImage,
+						isVideo: isVideo,
+						displaySize: displaySize,
+						sourceSize: sourceSize,
+						onSchedulePreviewGeneration: schedulePreviewGeneration
+					)
+
+					ResizeSettingsView(
+						enableResize: $enableResize,
+						targetWidth: $targetWidth,
+						targetHeight: $targetHeight,
+						scaleMode: $scaleMode,
+						sourceSize: sourceSize,
+						onSchedulePreviewGeneration: schedulePreviewGeneration
+					)
+
+					OutputSettingsView(
+						outputFolder: $outputFolder,
+						outputFileName: $outputFileName,
+						isWorking: $isWorking,
+						lastOutputURL: $lastOutputURL,
+						errorMessage: $errorMessage,
+						showDeleteConfirmation: $showDeleteConfirmation,
+						canExport: canExport,
+						inputURL: inputURL,
+						enableResize: enableResize,
+						effectiveTargetSize: effectiveTargetSize,
+						stretchPreviewResult: stretchPreviewResult,
+						sourceSize: sourceSize,
+						thumbnailImage: thumbnailFromDisplay(),
+						onExport: run,
+						onDeleteSourceFile: deleteSourceFile
+					)
 				}
 
 				Spacer()
@@ -121,289 +155,6 @@ struct VideoCropResizeView: View {
 	private var infoSection: some View {
 		Text(infoText)
 			.foregroundStyle(.secondary)
-	}
-
-	// MARK: - Crop
-
-	private var cropSection: some View {
-		GroupBox {
-			VStack(alignment: .leading, spacing: 10) {
-				Toggle("启用裁剪", isOn: $enableCrop)
-					.toggleStyle(.switch)
-					.onChange(of: enableCrop) { newValue in
-						if !newValue {
-							if isVideo { player?.play() }
-						} else {
-							syncRectToFields()
-						}
-						schedulePreviewGeneration()
-					}
-
-				if enableCrop {
-					cropPreviewArea
-
-					HStack {
-						if let src = sourceSize {
-							Text("裁剪后: \(Int(src.width)) × \(Int(src.height))")
-								.font(.caption)
-								.foregroundStyle(.secondary)
-						}
-						Spacer()
-						Button("重置为全屏") {
-							withAnimation { normalizedRect = CGRect(x: 0, y: 0, width: 1, height: 1) }
-						}
-						.buttonStyle(.borderless)
-						.font(.caption)
-					}
-
-					HStack(spacing: 8) {
-						Text("裁剪宽高")
-							.font(.caption)
-							.foregroundStyle(.secondary)
-						TextField("宽", text: $cropWidthText)
-							.frame(width: 80)
-							.textFieldStyle(.roundedBorder)
-						Text("×")
-							.font(.caption)
-							.foregroundStyle(.secondary)
-						TextField("高", text: $cropHeightText)
-							.frame(width: 80)
-							.textFieldStyle(.roundedBorder)
-						Text("px")
-							.font(.caption)
-							.foregroundStyle(.secondary)
-
-						Button("应用") {
-							commitCropFields()
-						}
-						.buttonStyle(.borderedProminent)
-						.controlSize(.small)
-						.disabled(cropWidthText.isEmpty || cropHeightText.isEmpty)
-					}
-				}
-			}
-		} label: {
-			Label("第一步：尺寸裁剪", systemImage: "crop")
-				.font(.headline)
-		}
-	}
-
-	private var cropPreviewArea: some View {
-		GeometryReader { geo in
-			let container = geo.size
-			let video = displaySize ?? container
-			let scale = min(
-				container.width / max(video.width, 1),
-				container.height / max(video.height, 1)
-			)
-			let fitted = CGSize(width: video.width * scale, height: video.height * scale)
-			let origin = CGPoint(
-				x: (container.width - fitted.width) / 2,
-				y: (container.height - fitted.height) / 2
-			)
-
-			ZStack(alignment: .topLeading) {
-				if isVideo {
-					VideoPlayer(player: player)
-						.onDisappear { player?.pause() }
-				} else if let cgImage = cachedCGImage {
-					let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-					Image(nsImage: nsImage)
-						.resizable()
-						.aspectRatio(contentMode: .fit)
-				}
-
-				CropOverlay(normalizedRect: $normalizedRect)
-					.frame(width: fitted.width, height: fitted.height)
-					.position(x: origin.x + fitted.width / 2, y: origin.y + fitted.height / 2)
-					.allowsHitTesting(true)
-			}
-		}
-		.frame(height: 320)
-		.clipped()
-		.cornerRadius(8)
-	}
-
-	// MARK: - Resize
-
-	private var resizeSection: some View {
-		GroupBox {
-			VStack(alignment: .leading, spacing: 10) {
-				Toggle("启用尺寸调整", isOn: $enableResize)
-					.toggleStyle(.switch)
-					.onChange(of: enableResize) { newValue in
-						if newValue, let src = sourceSize {
-							if targetWidth.isEmpty { targetWidth = String(Int(src.width)) }
-							if targetHeight.isEmpty { targetHeight = String(Int(src.height)) }
-						}
-						schedulePreviewGeneration()
-					}
-
-				if enableResize {
-					resizeForm
-				}
-			}
-		} label: {
-			Label("第二步：尺寸调整", systemImage: "rectangle.arrowtriangle.2.outward")
-				.font(.headline)
-		}
-	}
-
-	private var resizeForm: some View {
-		VStack(alignment: .leading, spacing: 10) {
-			if let src = sourceSize {
-				Text("来源分辨率: \(Int(src.width)) × \(Int(src.height))")
-					.font(.caption)
-					.foregroundStyle(.secondary)
-			}
-
-			Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-				GridRow {
-					Text("目标宽度")
-					TextField("例如 1920", text: $targetWidth)
-						.frame(width: 160)
-						.onChange(of: targetWidth) { _ in schedulePreviewGeneration() }
-					Text("目标高度")
-					TextField("例如 1080", text: $targetHeight)
-						.frame(width: 160)
-						.onChange(of: targetHeight) { _ in schedulePreviewGeneration() }
-				}
-
-				GridRow {
-					Text("缩放策略")
-					Picker("", selection: $scaleMode) {
-						ForEach(VideoScaleMode.allCases) { mode in
-							Text(mode.rawValue).tag(mode)
-						}
-					}
-					.frame(maxWidth: 460, alignment: .leading)
-					.gridCellColumns(3)
-					.onChange(of: scaleMode) { _ in schedulePreviewGeneration() }
-				}
-			}
-		}
-		.padding(.leading, 4)
-	}
-
-	// MARK: - Stretch Preview
-
-	@ViewBuilder
-	private var stretchPreviewSection: some View {
-		if enableResize, effectiveTargetSize != nil, let result = stretchPreviewResult {
-			GroupBox {
-				VStack(alignment: .leading, spacing: 8) {
-					Text("拉伸效果预览")
-						.font(.subheadline).bold()
-
-					HStack(spacing: 12) {
-						VStack(spacing: 4) {
-							Text("裁剪后画面")
-								.font(.caption)
-								.foregroundStyle(.secondary)
-							if let src = sourceSize {
-								Image(nsImage: thumbnailFromDisplay())
-									.resizable()
-									.aspectRatio(contentMode: .fit)
-									.frame(maxHeight: 160)
-									.cornerRadius(4)
-							}
-						}
-
-						Image(systemName: "arrow.right")
-							.foregroundStyle(.secondary)
-
-						VStack(spacing: 4) {
-							Text("调整后 (\(Int(effectiveTargetSize?.width ?? 0))×\(Int(effectiveTargetSize?.height ?? 0)))")
-								.font(.caption)
-								.foregroundStyle(.secondary)
-							Image(nsImage: result)
-								.resizable()
-								.aspectRatio(contentMode: .fit)
-								.frame(maxHeight: 160)
-								.cornerRadius(4)
-						}
-					}
-				}
-			} label: {
-				Label("预览", systemImage: "eye")
-					.font(.headline)
-			}
-		}
-	}
-
-	// MARK: - Output
-
-	private var outputSection: some View {
-		VStack(alignment: .leading, spacing: 10) {
-			Text("输出设置")
-				.font(.headline)
-
-			Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-				GridRow {
-					Text("输出目录")
-					HStack {
-						OpenPanelButton(title: "选择目录…", mode: .folder) { urls in
-							outputFolder = urls.first
-						}
-						Text(outputFolder?.path ?? "(默认：原文件同目录)")
-							.lineLimit(1)
-							.truncationMode(.middle)
-					}
-					.gridCellColumns(3)
-				}
-
-				GridRow {
-					Text("输出文件名")
-					TextField("例如 xxx_output.mp4", text: $outputFileName)
-						.frame(maxWidth: 520)
-						.gridCellColumns(3)
-				}
-			}
-		}
-	}
-
-	private var actionButtons: some View {
-		VStack(alignment: .leading, spacing: 8) {
-			HStack(spacing: 12) {
-			Button(isWorking ? "处理中…" : "开始导出") {
-				Task {
-					guard await WorkManager.shared.requestStart(.videoCropResize) else { return }
-					isWorking = true
-					defer {
-						isWorking = false
-						WorkManager.shared.finishWork(.videoCropResize)
-					}
-					await run()
-				}
-			}
-				.disabled(!canExport)
-
-				if let lastOutputURL {
-					Button("在 Finder 中显示结果") {
-						NSWorkspace.shared.activateFileViewerSelecting([lastOutputURL])
-					}
-				}
-
-				if lastOutputURL != nil, let inputURL, FileManager.default.fileExists(atPath: inputURL.path) {
-					Button("删除所有源文件", role: .destructive) {
-						showDeleteConfirmation = true
-					}
-				}
-			}
-
-			if let errorMessage {
-				Text(errorMessage)
-					.foregroundStyle(.red)
-			}
-		}
-		.alert("删除所有源文件", isPresented: $showDeleteConfirmation) {
-			Button("取消", role: .cancel) { }
-			Button("删除", role: .destructive) {
-				deleteSourceFile()
-			}
-		} message: {
-			Text("是否真的要删除所有源文件？将文件移到废纸篓。")
-		}
 	}
 
 	// MARK: - Actions
@@ -451,7 +202,11 @@ struct VideoCropResizeView: View {
 					targetWidth = String(Int(display.width))
 					targetHeight = String(Int(display.height))
 				}
-				syncRectToFields()
+				// Sync crop fields after display size is known
+				if enableCrop, let d = displaySize {
+					cropWidthText = String(Int(normalizedRect.width * d.width))
+					cropHeightText = String(Int(normalizedRect.height * d.height))
+				}
 			} catch {
 				infoText = "读取文件信息失败：\(error.localizedDescription)"
 				displaySize = nil
@@ -496,32 +251,6 @@ struct VideoCropResizeView: View {
 		return folder.appendingPathComponent(name)
 	}
 
-	// MARK: - Crop Field Sync
-
-	private func syncRectToFields() {
-		guard let d = displaySize else { return }
-		isSyncingCropField = true
-		cropWidthText = String(Int(normalizedRect.width * d.width))
-		cropHeightText = String(Int(normalizedRect.height * d.height))
-		DispatchQueue.main.async { isSyncingCropField = false }
-	}
-
-	private func commitCropFields() {
-		guard let d = displaySize else { return }
-		guard let w = Double(cropWidthText), let h = Double(cropHeightText), w > 2, h > 2 else { return }
-		isSyncingCropField = true
-
-		var newRect = normalizedRect
-		newRect.size.width = min(w / d.width, 1 - newRect.origin.x)
-		newRect.size.height = min(h / d.height, 1 - newRect.origin.y)
-		newRect.size.width = max(newRect.size.width, 0.08)
-		newRect.size.height = max(newRect.size.height, 0.08)
-		normalizedRect = newRect
-
-		DispatchQueue.main.async { isSyncingCropField = false }
-		schedulePreviewGeneration()
-	}
-
 	// MARK: - Stretch Preview Generation
 
 	private func schedulePreviewGeneration() {
@@ -534,7 +263,6 @@ struct VideoCropResizeView: View {
 
 		previewGenTask = Task {
 			let crop = effectiveCropRect ?? CGRect(origin: .zero, size: displaySize)
-			let croppedSize = isVideo ? CGSize(width: crop.width, height: crop.height) : displaySize
 
 			let result: CGImage?
 			if isVideo {

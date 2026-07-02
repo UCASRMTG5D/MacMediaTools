@@ -39,11 +39,7 @@ enum SimilarVideoClusterer {
 		let similarityToCentroid: Double
 	}
 
-	/// Edge between two videos (used internally).
-	private struct Edge: Hashable {
-		let a: String // URL.path
-		let b: String
-	}
+	
 
 	// MARK: - Configuration
 

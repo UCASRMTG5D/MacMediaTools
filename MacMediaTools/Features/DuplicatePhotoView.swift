@@ -123,61 +123,41 @@ struct DuplicatePhotoView: View {
 		let folder = folderURL
 		let exts = photoExts
 
-		Task.detached(priority: .userInitiated) { [folder, exts] in
-			let files = FolderScanner.scanFiles(in: folder, allowedExtensions: exts)
-			await MainActor.run {
-				totalCount = files.count
-				processedCount = 0
-				statusText = "扫描中：将按 SHA256 判定“完全相同文件”"
-			}
+		let files = await Task.detached(priority: .userInitiated) {
+			FolderScanner.scanFiles(in: folder, allowedExtensions: exts)
+		}.value
 
-			var map: [String: [URL]] = [:]
+		totalCount = files.count
+		statusText = "扫描中：将按 SHA256 判定“完全相同文件”"
 
-			for (idx, url) in files.enumerated() {
-				if Task.isCancelled { return }
-
-				do {
-					let hash = try FileHasher.sha256(url: url)
-					map[hash, default: []].append(url)
-				} catch {
-				}
-
-				if idx % 10 == 0 || idx + 1 == files.count {
-					await MainActor.run { processedCount = idx + 1 }
-				}
-			}
-
-			let dupGroups = map
-				.filter { $0.value.count > 1 }
-				.map { DuplicatePhotoGroup(id: $0.key, files: $0.value.sorted(by: { $0.path < $1.path })) }
-				.sorted(by: { $0.files.count > $1.files.count })
-
-			await MainActor.run {
-				groups = dupGroups
-				statusText = "完成：共扫描 \(files.count) 张图片，发现 \(groups.count) 组重复"
-				isWorking = false
+		// Hash files on MainActor (SHA256 of photos is fast enough)
+		var map: [String: [URL]] = [:]
+		for (idx, url) in files.enumerated() {
+			if Task.isCancelled { return }
+			do {
+				let hash = try FileHasher.sha256(url: url)
+				map[hash, default: []].append(url)
+			} catch {}
+			if idx % 10 == 0 || idx + 1 == files.count {
+				processedCount = idx + 1
 			}
 		}
+
+		let dupGroups = map
+			.filter { $0.value.count > 1 }
+			.map { DuplicatePhotoGroup(id: $0.key, files: $0.value.sorted(by: { $0.path < $1.path })) }
+			.sorted(by: { $0.files.count > $1.files.count })
+
+		groups = dupGroups
+		statusText = "完成：共扫描 \(files.count) 张图片，发现 \(groups.count) 组重复"
+		isWorking = false
 	}
 
 	private func deleteFile(_ url: URL) {
-		let alert = NSAlert()
-		alert.messageText = "确认删除文件"
-		alert.informativeText = "确定要删除文件 \"\(url.lastPathComponent)\" 吗？此操作无法撤销。"
-		alert.alertStyle = .warning
-		alert.addButton(withTitle: "删除")
-		alert.addButton(withTitle: "取消")
-
-		if alert.runModal() == .alertFirstButtonReturn {
-			do {
-				try FileManager.default.removeItem(at: url)
-				groups = groups.map { group in
-					let remaining = group.files.filter { $0 != url }
-					return DuplicatePhotoGroup(id: group.id, files: remaining)
-				}.filter { $0.files.count > 1 }
-			} catch {
-				errorMessage = "删除失败：\(error.localizedDescription)"
-			}
-		}
+		guard confirmAndDeleteSource(url: url) else { return }
+		groups = groups.map { group in
+			let remaining = group.files.filter { $0 != url }
+			return DuplicatePhotoGroup(id: group.id, files: remaining)
+		}.filter { $0.files.count > 1 }
 	}
 }

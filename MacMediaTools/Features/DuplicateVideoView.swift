@@ -414,54 +414,25 @@ struct DuplicateVideoView: View {
 	// MARK: - Delete (Quick)
 
 	private func deleteQuickFile(_ url: URL) {
-		let alert = NSAlert()
-		alert.messageText = "确认移到废纸篓"
-		alert.informativeText = "确定要将文件 \"\(url.lastPathComponent)\" 移到废纸篓吗？"
-		alert.alertStyle = .warning
-		alert.addButton(withTitle: "移到废纸篓")
-		alert.addButton(withTitle: "取消")
-
-		if alert.runModal() == .alertFirstButtonReturn {
-			do {
-				try FileManager.default.trashItem(at: url, resultingItemURL: nil)
-				scanModel.quickGroups = scanModel.quickGroups.compactMap { group in
-					let remaining = group.files.filter { $0 != url }
-					guard remaining.count > 1 else { return nil }
-					return DuplicateVideoGroup(id: group.id, keyDescription: group.keyDescription, files: remaining)
-				}
-			} catch {
-				scanModel.errorMessage = "移到废纸篓失败：\(error.localizedDescription)"
-			}
+		guard confirmAndTrash(url: url) else { return }
+		scanModel.quickGroups = scanModel.quickGroups.compactMap { group in
+			let remaining = group.files.filter { $0 != url }
+			guard remaining.count > 1 else { return nil }
+			return DuplicateVideoGroup(id: group.id, keyDescription: group.keyDescription, files: remaining)
 		}
 	}
 
 	// MARK: - Delete (Deep)
 
 	private func deleteDeepItem(_ item: SimilarVideoClusterer.ClusterItem, from cluster: SimilarVideoClusterer.Cluster) {
-		let alert = NSAlert()
-		alert.messageText = "确认移到废纸篓"
-		alert.informativeText = "确定要将文件 \"\(item.url.lastPathComponent)\" 移到废纸篓吗？"
-		alert.alertStyle = .warning
-		alert.addButton(withTitle: "移到废纸篓")
-		alert.addButton(withTitle: "取消")
-
-		if alert.runModal() == .alertFirstButtonReturn {
-			do {
-				try FileManager.default.trashItem(at: item.url, resultingItemURL: nil)
-
-				// Remove from display
-				let clusterId = cluster.id
-				scanModel.deepClusters = scanModel.deepClusters.compactMap { c in
-					guard c.id == clusterId else { return c }
-					let remaining = c.items.filter { $0.url != item.url }
-					guard remaining.count >= 2 else { return nil }
-					// Recompute mean similarity
-					let meanSim = remaining.reduce(0.0) { $0 + $1.similarityToCentroid } / Double(remaining.count)
-					return SimilarVideoClusterer.Cluster(id: c.id, items: remaining, meanSimilarity: meanSim)
-				}
-			} catch {
-				scanModel.errorMessage = "移到废纸篓失败：\(error.localizedDescription)"
-			}
+		guard confirmAndTrash(url: item.url) else { return }
+		let clusterId = cluster.id
+		scanModel.deepClusters = scanModel.deepClusters.compactMap { c in
+			guard c.id == clusterId else { return c }
+			let remaining = c.items.filter { $0.url != item.url }
+			guard remaining.count >= 2 else { return nil }
+			let meanSim = remaining.reduce(0.0) { $0 + $1.similarityToCentroid } / Double(remaining.count)
+			return SimilarVideoClusterer.Cluster(id: c.id, items: remaining, meanSimilarity: meanSim)
 		}
 	}
 }

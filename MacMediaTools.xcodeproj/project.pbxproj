@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		14EC08122BDF8AC961024347 /* ThumbnailPreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81969E4C52AB1102DBC1A1E9 /* ThumbnailPreviewPanel.swift */; };
+		1BD3A00E2E0E8313F89267C2 /* KeyboardShortcutsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999837FEBF7F3C2671F458C0 /* KeyboardShortcutsModifier.swift */; };
+		278B558974432E0399340951 /* TrackRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */; };
+		2AB144B5C320FA623C975EA5 /* CropSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6194B9F0CD7D999A5178373F /* CropSettingsView.swift */; };
+		95773F51BD1B05D1D1ACBD45 /* FrameThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */; };
+		98737A7B28561321202875D4 /* ResizeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02BEB260C3573273D9070860 /* ResizeSettingsView.swift */; };
 		AA0000000000000000000101 /* MacMediaToolsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000201 /* MacMediaToolsApp.swift */; };
 		AA0000000000000000000102 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000202 /* RootView.swift */; };
 		AA0000000000000000000103 /* ToolFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000203 /* ToolFeature.swift */; };
@@ -19,31 +25,43 @@
 		AA000000000000000000010B /* VideoConcatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020B /* VideoConcatView.swift */; };
 		AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020C /* DuplicatePhotoView.swift */; };
 		AA000000000000000000010D /* DuplicateVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000020D /* DuplicateVideoView.swift */; };
+		AA0000000000000000000110 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000301 /* Assets.xcassets */; };
 		AA0000000000000000000111 /* FileCopyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000210 /* FileCopyView.swift */; };
 		AA0000000000000000000114 /* AudioVideoToolkit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000213 /* AudioVideoToolkit.swift */; };
 		AA0000000000000000000115 /* AudioVideoEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000214 /* AudioVideoEditorView.swift */; };
 		AA0000000000000000000117 /* VideoScreenshotExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000215 /* VideoScreenshotExtractor.swift */; };
 		AA0000000000000000000118 /* VideoScreenshotExtractorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000216 /* VideoScreenshotExtractorView.swift */; };
-		AA0000000000000000000130 /* WorkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000223 /* WorkManager.swift */; };
-		AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000224 /* DuplicateVideoScanModel.swift */; };
 		AA0000000000000000000119 /* OperationLogManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000217 /* OperationLogManager.swift */; };
 		AA0000000000000000000120 /* VideoProgressSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000218 /* VideoProgressSlider.swift */; };
-		AA0000000000000000000126 /* MediaToolsUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000219 /* MediaToolsUtilities.swift */; };
-		AA0000000000000000000127 /* VideoHashCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000220 /* VideoHashCache.swift */; };
-		AA0000000000000000000128 /* SimilarVideoClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000221 /* SimilarVideoClusterer.swift */; };
-		AA0000000000000000000129 /* VideoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000222 /* VideoComparisonPanel.swift */; };
-		AA0000000000000000000110 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000301 /* Assets.xcassets */; };
-
 		AA0000000000000000000121 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000401 /* AVFoundation.framework */; };
 		AA0000000000000000000122 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000402 /* AVKit.framework */; };
 		AA0000000000000000000123 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000403 /* AppKit.framework */; };
 		AA0000000000000000000124 /* CryptoKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000404 /* CryptoKit.framework */; };
 		AA0000000000000000000125 /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000405 /* UniformTypeIdentifiers.framework */; };
+		AA0000000000000000000126 /* MediaToolsUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000219 /* MediaToolsUtilities.swift */; };
+		AA0000000000000000000127 /* VideoHashCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000220 /* VideoHashCache.swift */; };
+		AA0000000000000000000128 /* SimilarVideoClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000221 /* SimilarVideoClusterer.swift */; };
+		AA0000000000000000000129 /* VideoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000222 /* VideoComparisonPanel.swift */; };
+		AA0000000000000000000130 /* WorkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000223 /* WorkManager.swift */; };
+		AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000224 /* DuplicateVideoScanModel.swift */; };
+		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
+		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
+		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
+		EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8084873CD47F896F183A5556 /* AudioTimelineView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		02BEB260C3573273D9070860 /* ResizeSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResizeSettingsView.swift; sourceTree = "<group>"; };
+		23EE24C38B34395DB6900278 /* TrackBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TrackBarView.swift; path = TrackBarView.swift; sourceTree = "<group>"; };
+		313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TimeRulerView.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
+		4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TrackRowView.swift; path = TrackRowView.swift; sourceTree = "<group>"; };
+		6194B9F0CD7D999A5178373F /* CropSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CropSettingsView.swift; sourceTree = "<group>"; };
+		8084873CD47F896F183A5556 /* AudioTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AudioTimelineView.swift; path = AudioTimelineView.swift; sourceTree = "<group>"; };
+		81969E4C52AB1102DBC1A1E9 /* ThumbnailPreviewPanel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailPreviewPanel.swift; sourceTree = "<group>"; };
+		975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OutputSettingsView.swift; sourceTree = "<group>"; };
+		999837FEBF7F3C2671F458C0 /* KeyboardShortcutsModifier.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsModifier.swift; sourceTree = "<group>"; };
+		9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FrameThumbnail.swift; sourceTree = "<group>"; };
 		AA0000000000000000000001 /* MacMediaTools.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacMediaTools.app; sourceTree = BUILT_PRODUCTS_DIR; };
-
 		AA0000000000000000000201 /* MacMediaToolsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaToolsApp.swift; sourceTree = "<group>"; };
 		AA0000000000000000000202 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000203 /* ToolFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolFeature.swift; sourceTree = "<group>"; };
@@ -66,12 +84,11 @@
 		AA0000000000000000000219 /* MediaToolsUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaToolsUtilities.swift; sourceTree = "<group>"; };
 		AA0000000000000000000220 /* VideoHashCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoHashCache.swift; sourceTree = "<group>"; };
 		AA0000000000000000000221 /* SimilarVideoClusterer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimilarVideoClusterer.swift; sourceTree = "<group>"; };
+		AA0000000000000000000222 /* VideoComparisonPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoComparisonPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000223 /* WorkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkManager.swift; sourceTree = "<group>"; };
 		AA0000000000000000000224 /* DuplicateVideoScanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoScanModel.swift; sourceTree = "<group>"; };
-		AA0000000000000000000222 /* VideoComparisonPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoComparisonPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-
 		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		AA0000000000000000000402 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 		AA0000000000000000000403 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -95,7 +112,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AA0000000000000000000010 /* MacMediaTools */ = {
+		AA0000000000000000000010 = {
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000012 /* MacMediaTools */,
@@ -104,7 +121,6 @@
 			);
 			sourceTree = "<group>";
 		};
-
 		AA0000000000000000000011 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -113,7 +129,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-
 		AA0000000000000000000012 /* MacMediaTools */ = {
 			isa = PBXGroup;
 			children = (
@@ -130,7 +145,6 @@
 			path = MacMediaTools;
 			sourceTree = "<group>";
 		};
-
 		AA0000000000000000000013 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -143,7 +157,6 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-
 		AA000000000000000000005A /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -152,7 +165,6 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-
 		AA000000000000000000005B /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -163,7 +175,6 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
-
 		AA000000000000000000005C /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -181,7 +192,6 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
-
 		AA000000000000000000005D /* Features */ = {
 			isa = PBXGroup;
 			children = (
@@ -193,9 +203,19 @@
 				AA0000000000000000000210 /* FileCopyView.swift */,
 				AA0000000000000000000214 /* AudioVideoEditorView.swift */,
 				AA0000000000000000000216 /* VideoScreenshotExtractorView.swift */,
+				4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */,
+				8084873CD47F896F183A5556 /* AudioTimelineView.swift */,
+				23EE24C38B34395DB6900278 /* TrackBarView.swift */,
+				313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */,
+				999837FEBF7F3C2671F458C0 /* KeyboardShortcutsModifier.swift */,
+				81969E4C52AB1102DBC1A1E9 /* ThumbnailPreviewPanel.swift */,
+				6194B9F0CD7D999A5178373F /* CropSettingsView.swift */,
+				975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */,
+				9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */,
+				02BEB260C3573273D9070860 /* ResizeSettingsView.swift */,
 			);
-			path = Features;
-			sourceTree = "<group>";
+			path = MacMediaTools/Features;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
@@ -234,13 +254,13 @@
 			};
 			buildConfigurationList = AA0000000000000000000040 /* Build configuration list for PBXProject "MacMediaTools" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = zh-Hans;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				zh-Hans,
+				"zh-Hans",
 				Base,
 			);
-			mainGroup = AA0000000000000000000010 /* MacMediaTools */;
+			mainGroup = AA0000000000000000000010;
 			productRefGroup = AA0000000000000000000011 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -261,8 +281,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-
-
 /* Begin PBXSourcesBuildPhase section */
 		AA0000000000000000000030 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -280,8 +298,7 @@
 				AA000000000000000000010B /* VideoConcatView.swift in Sources */,
 				AA000000000000000000010C /* DuplicatePhotoView.swift in Sources */,
 				AA000000000000000000010D /* DuplicateVideoView.swift in Sources */,
-		AA0000000000000000000111 /* FileCopyView.swift in Sources */,
-
+				AA0000000000000000000111 /* FileCopyView.swift in Sources */,
 				AA0000000000000000000114 /* AudioVideoToolkit.swift in Sources */,
 				AA0000000000000000000115 /* AudioVideoEditorView.swift in Sources */,
 				AA0000000000000000000117 /* VideoScreenshotExtractor.swift in Sources */,
@@ -294,6 +311,16 @@
 				AA0000000000000000000130 /* WorkManager.swift in Sources */,
 				AA0000000000000000000129 /* VideoComparisonPanel.swift in Sources */,
 				AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */,
+				278B558974432E0399340951 /* TrackRowView.swift in Sources */,
+				EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */,
+				B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */,
+				D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */,
+				1BD3A00E2E0E8313F89267C2 /* KeyboardShortcutsModifier.swift in Sources */,
+				14EC08122BDF8AC961024347 /* ThumbnailPreviewPanel.swift in Sources */,
+				2AB144B5C320FA623C975EA5 /* CropSettingsView.swift in Sources */,
+				BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */,
+				95773F51BD1B05D1D1ACBD45 /* FrameThumbnail.swift in Sources */,
+				98737A7B28561321202875D4 /* ResizeSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,7 +353,6 @@
 			};
 			name = Release;
 		};
-
 		AA0000000000000000000051 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {

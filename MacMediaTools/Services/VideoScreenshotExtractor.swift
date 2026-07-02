@@ -3,6 +3,24 @@ import AppKit
 import Foundation
 
 actor VideoScreenshotExtractor {
+    enum ScreenshotExtractorError: LocalizedError {
+        case noVideoTrack
+        case invalidSettings(String)
+        case userCancelled
+        case noFramesExtracted
+        case zipFailed(String)
+        
+        var errorDescription: String? {
+            switch self {
+            case .noVideoTrack: return "未能找到视频轨道"
+            case .invalidSettings(let msg): return msg
+            case .userCancelled: return "用户已取消"
+            case .noFramesExtracted: return "未能提取任何截图"
+            case .zipFailed(let msg): return "打包失败: \(msg)"
+            }
+        }
+    }
+    
     static let shared = VideoScreenshotExtractor()
 
     private init() {}
@@ -63,9 +81,7 @@ actor VideoScreenshotExtractor {
         let tracks = try await asset.loadTracks(withMediaType: .video)
 
         guard let videoTrack = tracks.first else {
-            throw NSError(domain: "VideoScreenshotExtractor", code: -1, userInfo: [
-                NSLocalizedDescriptionKey: "未能找到视频轨道"
-            ])
+            throw ScreenshotExtractorError.noVideoTrack
         }
 
         let naturalSize = try await videoTrack.load(.naturalSize)
@@ -284,9 +300,7 @@ actor VideoScreenshotExtractor {
         logs.append("[\(timestamp())] 视频信息: 时长=\(formatTime(metadata.duration)), 分辨率=\(metadata.width)x\(metadata.height), 帧率=\(metadata.frameRate)fps")
 
         if let validationError = validateSettings(settings: settings, duration: metadata.duration) {
-            throw NSError(domain: "VideoScreenshotExtractor", code: -2, userInfo: [
-                NSLocalizedDescriptionKey: validationError
-            ])
+            throw ScreenshotExtractorError.invalidSettings(validationError)
         }
 
         let asset = AVURLAsset(url: videoURL)
@@ -298,9 +312,7 @@ actor VideoScreenshotExtractor {
         // 计算时间点
         let timeRange = settings.endTime - settings.startTime
         guard settings.interval > 0 else {
-            throw NSError(domain: "VideoScreenshotExtractor", code: -4, userInfo: [
-                NSLocalizedDescriptionKey: "时间间隔不能为零"
-            ])
+            throw ScreenshotExtractorError.invalidSettings("时间间隔不能为零")
         }
         let frameCount = max(1, Int(timeRange / settings.interval) + 1)
         var timePoints: [Double] = []
@@ -325,9 +337,7 @@ actor VideoScreenshotExtractor {
             while pauseHandler() {
                 if cancelHandler() {
                     logs.append("[\(timestamp())] 用户取消操作")
-                    throw NSError(domain: "VideoScreenshotExtractor", code: -3, userInfo: [
-                        NSLocalizedDescriptionKey: "用户已取消"
-                    ])
+                    throw ScreenshotExtractorError.userCancelled
                 }
                 try await Task.sleep(nanoseconds: 100_000_000)
             }
@@ -335,9 +345,7 @@ actor VideoScreenshotExtractor {
             // 检查取消
             if cancelHandler() {
                 logs.append("[\(timestamp())] 用户取消操作")
-                throw NSError(domain: "VideoScreenshotExtractor", code: -3, userInfo: [
-                    NSLocalizedDescriptionKey: "用户已取消"
-                ])
+                throw ScreenshotExtractorError.userCancelled
             }
 
             let progress = Double(index) / Double(timePoints.count)
@@ -461,9 +469,7 @@ actor VideoScreenshotExtractor {
         logs.append("[\(timestamp())] 平均速度: \(String(format: "%.2f", Double(extractedFrames.count) / totalTime)) 帧/秒")
 
         if extractedFrames.isEmpty {
-            throw NSError(domain: "VideoScreenshotExtractor", code: -4, userInfo: [
-                NSLocalizedDescriptionKey: "未能提取任何截图"
-            ])
+            throw ScreenshotExtractorError.noFramesExtracted
         }
 
         return ExtractionResult(
@@ -501,9 +507,7 @@ actor VideoScreenshotExtractor {
         task.waitUntilExit()
 
         if task.terminationStatus != 0 {
-            throw NSError(domain: "VideoScreenshotExtractor", code: -5, userInfo: [
-                NSLocalizedDescriptionKey: "打包失败"
-            ])
+            throw ScreenshotExtractorError.zipFailed("打包失败")
         }
     }
 

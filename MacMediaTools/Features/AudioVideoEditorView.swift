@@ -209,7 +209,7 @@ struct AudioVideoEditorView: View {
                             .disabled(!canAlign)
 
                             Button("同步对齐") {
-                                alignTracks(to: .sync)
+                                alignTracks(to: .start)
                             }
                             .disabled(!canAlign)
                         }
@@ -423,126 +423,47 @@ struct AudioVideoEditorView: View {
             } else {
                 videoOffset = max(0, videoTrack.duration - (audioTrack.duration * videoSpeed / audioSpeed))
             }
-        case .sync:
-            videoOffset = 0
-            audioOffset = 0
         }
     }
 
     enum AlignmentType {
         case start
         case end
-        case sync
     }
 
     private func mergeFiles() async {
         guard let videoURL, let audioURL, let outputURL else { return }
-
-        isExporting = true
-        exportProgress = 0
-
-        let settings = AudioVideoToolkit.MergeSettings(
-            videoStartOffset: videoOffset,
-            audioStartOffset: audioOffset,
-            videoSpeed: videoSpeed,
-            audioSpeed: audioSpeed
-        )
-
-        do {
+        await performExport(operation: "合并", outputURL: outputURL) { progressHandler in
             try await AudioVideoToolkit.shared.mergeAudioVideo(
                 videoURL: videoURL,
                 audioURL: audioURL,
                 outputURL: outputURL,
-                settings: settings
-            ) { progress in
-                DispatchQueue.main.async {
-                    self.exportProgress = progress
-                }
-            }
-
-            await MainActor.run {
-                successMessage = "合并成功！"
-                errorMessage = nil
-                NSWorkspace.shared.activateFileViewerSelecting([outputURL])
-            }
-        } catch {
-            await MainActor.run {
-                errorMessage = "合并失败：\(error.localizedDescription)"
-            }
-        }
-
-        await MainActor.run {
-            isExporting = false
+                settings: AudioVideoToolkit.MergeSettings(
+                    videoStartOffset: videoOffset,
+                    audioStartOffset: audioOffset,
+                    videoSpeed: videoSpeed,
+                    audioSpeed: audioSpeed
+                ),
+                progressHandler: progressHandler
+            )
         }
     }
 
     private func extractAudio() async {
         guard let videoURL else { return }
-
-        isExporting = true
-        exportProgress = 0
-
         let baseName = videoURL.deletingPathExtension().lastPathComponent
         let output = videoURL.deletingLastPathComponent().appendingPathComponent("\(baseName).m4a")
-
-        do {
-            try await AudioVideoToolkit.shared.extractAudio(
-                from: videoURL,
-                outputURL: output
-            ) { progress in
-                DispatchQueue.main.async {
-                    self.exportProgress = progress
-                }
-            }
-
-            await MainActor.run {
-                successMessage = "音频分离成功！"
-                errorMessage = nil
-                NSWorkspace.shared.activateFileViewerSelecting([output])
-            }
-        } catch {
-            await MainActor.run {
-                errorMessage = "分离失败：\(error.localizedDescription)"
-            }
-        }
-
-        await MainActor.run {
-            isExporting = false
+        await performExport(operation: "音频分离", outputURL: output) { progressHandler in
+            try await AudioVideoToolkit.shared.extractAudio(from: videoURL, outputURL: output, progressHandler: progressHandler)
         }
     }
 
     private func extractVideo() async {
         guard let videoURL else { return }
-
-        isExporting = true
-        exportProgress = 0
-
         let baseName = videoURL.deletingPathExtension().lastPathComponent
         let output = videoURL.deletingLastPathComponent().appendingPathComponent("\(baseName)_novideo.mov")
-
-        do {
-            try await AudioVideoToolkit.shared.extractVideo(
-                from: videoURL,
-                outputURL: output
-            ) { progress in
-                DispatchQueue.main.async {
-                    self.exportProgress = progress
-                }
-            }
-
-            await MainActor.run {
-                successMessage = "视频分离成功！"
-                errorMessage = nil
-                NSWorkspace.shared.activateFileViewerSelecting([output])
-            }
-        } catch {
-            await MainActor.run {
-                errorMessage = "分离失败：\(error.localizedDescription)"
-            }
-        }
-
-        await MainActor.run {
-            isExporting = false
+        await performExport(operation: "视频分离", outputURL: output) { progressHandler in
+            try await AudioVideoToolkit.shared.extractVideo(from: videoURL, outputURL: output, progressHandler: progressHandler)
         }
     }
 
@@ -565,11 +486,34 @@ struct AudioVideoEditorView: View {
         redoStack.removeAll()
     }
 
-    private func undo() {
-        guard let action = undoStack.popLast() else { return }
+    private func performExport(
+        operation: String,
+        outputURL: URL,
+        body: (@escaping (Double) -> Void) async throws -> Void
+    ) async {
+        isExporting = true
+        exportProgress = 0
+        defer { isExporting = false }
 
-        redoStack.append(action)
+        do {
+            try await body { progress in
+                Task { @MainActor in
+                    self.exportProgress = progress
+                }
+            }
+            await MainActor.run {
+                successMessage = "\(operation)成功！"
+                errorMessage = nil
+                NSWorkspace.shared.activateFileViewerSelecting([outputURL])
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "\(operation)失败：\(error.localizedDescription)"
+            }
+        }
+    }
 
+    private func applyAction(_ action: EditAction) {
         switch action {
         case .setVideo(let url):
             if let url {
@@ -594,172 +538,19 @@ struct AudioVideoEditorView: View {
         case .setAudioSpeed(let speed):
             audioSpeed = speed
         }
+    }
+
+    private func undo() {
+        guard let action = undoStack.popLast() else { return }
+
+        redoStack.append(action)
+        applyAction(action)
     }
 
     private func redo() {
         guard let action = redoStack.popLast() else { return }
 
         undoStack.append(action)
-
-        switch action {
-        case .setVideo(let url):
-            if let url {
-                loadVideo(url)
-            } else {
-                videoTrack = nil
-                videoURL = nil
-            }
-        case .setAudio(let url):
-            if let url {
-                loadAudio(url)
-            } else {
-                audioTrack = nil
-                audioURL = nil
-            }
-        case .setVideoOffset(let offset):
-            videoOffset = offset
-        case .setAudioOffset(let offset):
-            audioOffset = offset
-        case .setVideoSpeed(let speed):
-            videoSpeed = speed
-        case .setAudioSpeed(let speed):
-            audioSpeed = speed
-        }
-    }
-}
-
-struct TrackRow: View {
-    let title: String
-    let name: String
-    let duration: Double
-    @Binding var offset: Double
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .foregroundStyle(color)
-                .font(.subheadline)
-
-            Text(name)
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-            Text(formatDuration(duration))
-                .monospaced()
-                .foregroundStyle(.secondary)
-
-            Text("偏移")
-
-            Slider(value: $offset, in: 0...duration, step: 0.1)
-                .frame(width: 150)
-
-            Text("\(offset, specifier: "%.1f")s")
-                .monospaced()
-                .frame(width: 50)
-        }
-    }
-
-    private func formatDuration(_ seconds: Double) -> String {
-        let mins = Int(seconds / 60)
-        let secs = Int(seconds.truncatingRemainder(dividingBy: 60))
-        return String(format: "%02d:%02d", mins, secs)
-    }
-}
-
-struct TimelineView: View {
-    let videoTrack: AudioVideoEditorView.TrackItem?
-    let audioTrack: AudioVideoEditorView.TrackItem?
-    let videoOffset: Double
-    let audioOffset: Double
-    let scale: Double
-    @Binding var currentTime: Double
-
-    var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                VStack(spacing: 4) {
-                    if let videoTrack {
-                        TrackBar(
-                            duration: videoTrack.duration,
-                            offset: videoOffset,
-                            color: .blue,
-                            label: "视频",
-                            scale: scale
-                        )
-                    }
-
-                    if let audioTrack {
-                        TrackBar(
-                            duration: audioTrack.duration,
-                            offset: audioOffset,
-                            color: .green,
-                            label: "音频",
-                            scale: scale
-                        )
-                    }
-                }
-
-                Divider()
-                    .frame(height: 60)
-
-                TimeRuler(maxDuration: maxDuration, scale: scale)
-            }
-        }
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(8)
-    }
-
-    private var maxDuration: Double {
-        let videoDur = videoTrack?.duration ?? 0
-        let audioDur = audioTrack?.duration ?? 0
-        return max(videoDur, audioDur)
-    }
-}
-
-struct TrackBar: View {
-    let duration: Double
-    let offset: Double
-    let color: Color
-    let label: String
-    let scale: Double
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: offset * 100 * scale, height: 24)
-
-            Rectangle()
-                .fill(color)
-                .frame(width: duration * 100 * scale, height: 24)
-
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(color)
-                .padding(.leading, 4)
-        }
-    }
-}
-
-struct TimeRuler: View {
-    let maxDuration: Double
-    let scale: Double
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(0...Int(maxDuration), id: \.self) { i in
-                VStack(alignment: .leading) {
-                    Text("\(i)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Rectangle()
-                        .fill(.secondary)
-                        .frame(width: 1, height: 40)
-                }
-                .frame(width: 100 * scale)
-            }
-        }
+        applyAction(action)
     }
 }

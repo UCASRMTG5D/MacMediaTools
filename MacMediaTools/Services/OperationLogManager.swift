@@ -117,19 +117,19 @@ class OperationLogManager: ObservableObject {
         )
 
         if let data = try? JSONEncoder().encode(state) {
-            UserDefaults.standard.set(data, forKey: "LastExtractionTask")
+            UserDefaults.standard.set(data, forKey: UserDefaults.Keys.lastExtractionTask)
         }
     }
 
     func loadLastTaskState() -> TaskState? {
-        if let data = UserDefaults.standard.data(forKey: "LastExtractionTask") {
+        if let data = UserDefaults.standard.data(forKey: UserDefaults.Keys.lastExtractionTask) {
             return try? JSONDecoder().decode(TaskState.self, from: data)
         }
         return nil
     }
 
     func clearLastTaskState() {
-        UserDefaults.standard.removeObject(forKey: "LastExtractionTask")
+        UserDefaults.standard.removeObject(forKey: UserDefaults.Keys.lastExtractionTask)
     }
 
     private func saveLogs() {
@@ -137,12 +137,12 @@ class OperationLogManager: ObservableObject {
         encoder.dateEncodingStrategy = .iso8601
 
         if let data = try? encoder.encode(logs) {
-            UserDefaults.standard.set(data, forKey: "VideoScreenshotExtractorLogs")
+            UserDefaults.standard.set(data, forKey: UserDefaults.Keys.videoScreenshotExtractorLogs)
         }
     }
 
     private func loadLogs() {
-        if let data = UserDefaults.standard.data(forKey: "VideoScreenshotExtractorLogs") {
+        if let data = UserDefaults.standard.data(forKey: UserDefaults.Keys.videoScreenshotExtractorLogs) {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
 

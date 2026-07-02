@@ -283,11 +283,8 @@ struct FileCopyView: View {
 	private func compareImageHashes(source: URL, destination: URL) async -> CompareResult {
 		return await Task.detached(priority: .userInitiated) {
 			do {
-				let sourceData = try Data(contentsOf: source)
-				let destData = try Data(contentsOf: destination)
-
-				let sourceHash = SHA256.hash(data: sourceData)
-				let destHash = SHA256.hash(data: destData)
+				let sourceHash = try FileHasher.sha256(url: source)
+				let destHash = try FileHasher.sha256(url: destination)
 
 				if sourceHash == destHash {
 					return .same

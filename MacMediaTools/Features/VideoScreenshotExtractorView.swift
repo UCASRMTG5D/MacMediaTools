@@ -82,12 +82,6 @@ struct VideoScreenshotExtractorView: View {
         } message: {
             Text(successMessage)
         }
-        .onAppear {
-            // 尝试恢复上次任务
-            if let lastTask = OperationLogManager.shared.loadLastTaskState() {
-                // 可以在这里添加恢复任务的逻辑
-            }
-        }
         .onDisappear {
             if let playbackEndObserver {
                 NotificationCenter.default.removeObserver(playbackEndObserver)
@@ -112,8 +106,18 @@ struct VideoScreenshotExtractorView: View {
                     Text("视频导入")
                         .font(.headline)
 
-                    Button("选择视频文件") {
-                        selectVideo()
+                    OpenPanelButton(
+                        title: "选择视频文件",
+                        mode: .file(allowedTypes: [
+                            .movie, .mpeg4Movie, .quickTimeMovie,
+                            UTType("public.avi"),
+                            UTType("public.flv"),
+                            UTType("com.microsoft.wmv")
+                        ].compactMap { $0 }, allowsMultipleSelection: false)
+                    ) { urls in
+                        if let url = urls.first {
+                            Task { await loadVideo(url: url) }
+                        }
                     }
                     .buttonStyle(.bordered)
 
@@ -209,8 +213,8 @@ struct VideoScreenshotExtractorView: View {
                     Text("输出路径")
                         .font(.headline)
 
-                    Button("选择导出目录") {
-                        selectOutputDirectory()
+                    OpenPanelButton(title: "选择导出目录", mode: .folder) { urls in
+                        outputDirectory = urls.first
                     }
                     .buttonStyle(.bordered)
 
@@ -374,7 +378,7 @@ struct VideoScreenshotExtractorView: View {
                                 .font(.system(size: 14))
 
                             if let remaining = estimatedRemainingTime {
-                                Text("预计剩余: \(formatDuration(remaining))")
+                                Text("预计剩余: \(formatDurationChinese(remaining))")
                                     .font(.system(size: 12))
                                     .foregroundStyle(.secondary)
                             }
@@ -402,21 +406,6 @@ struct VideoScreenshotExtractorView: View {
     }
 
     // MARK: - Video Selection
-
-    private func selectVideo() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [
-            .movie, .mpeg4Movie, .quickTimeMovie,
-            UTType("public.avi"), UTType("public.flv"), UTType("com.microsoft.wmv")
-        ].compactMap { $0 }
-
-        if panel.runModal() == .OK, let url = panel.urls.first {
-            Task { await loadVideo(url: url) }
-        }
-    }
 
     private func loadVideo(url: URL) async {
         do {
@@ -604,17 +593,6 @@ struct VideoScreenshotExtractorView: View {
 
     // MARK: - Output Management
 
-    private func selectOutputDirectory() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-
-        if panel.runModal() == .OK, let url = panel.urls.first {
-            outputDirectory = url
-        }
-    }
-
     private func exportAsZip() {
         guard !extractedFrames.isEmpty else {
             return
@@ -642,7 +620,7 @@ struct VideoScreenshotExtractorView: View {
 
     // MARK: - Utility Methods
 
-    private func formatDuration(_ seconds: TimeInterval) -> String {
+    private func formatDurationChinese(_ seconds: TimeInterval) -> String {
         guard seconds.isFinite else {
             return "计算中..."
         }
@@ -653,222 +631,3 @@ struct VideoScreenshotExtractorView: View {
     }
 }
 
-struct ThumbnailPreviewPanel: View {
-    let frames: [VideoScreenshotExtractor.ExtractedFrame]
-    @Binding var selectedFrame: VideoScreenshotExtractor.ExtractedFrame?
-    var onExportZip: (() -> Void)?
-
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("提取结果")
-                    .font(.headline)
-
-                Text("\(frames.count) 帧")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                Button("导出为ZIP") {
-                    onExportZip?()
-                }
-                .disabled(frames.isEmpty)
-                .buttonStyle(.bordered)
-            }
-
-            if frames.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "image")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.secondary)
-
-                    Text("暂无提取结果")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(height: 300)
-            } else {
-                ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
-                        ForEach(frames.indices, id: \.self) { index in
-                            FrameThumbnail(
-                                frame: frames[index],
-                                index: index,
-                                isSelected: selectedFrame?.time == frames[index].time,
-                                onSelect: { selectedFrame = frames[index] }
-                            )
-                        }
-                    }
-                }
-                .frame(maxHeight: 400)
-                .scrollIndicators(.visible)
-            }
-
-            if let selectedFrame = selectedFrame {
-                Divider()
-
-                HStack(alignment: .top, spacing: 16) {
-                    Image(nsImage: NSImage(cgImage: selectedFrame.image, size: CGSize(width: selectedFrame.image.width, height: selectedFrame.image.height)))
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 200)
-                        .cornerRadius(8)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("帧 \(((frames.firstIndex { $0.time == selectedFrame.time } ?? 0) + 1))")
-                            .font(.headline)
-
-                        HStack(spacing: 16) {
-                            VStack(alignment: .leading) {
-                                Text("时间")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
-                                Text(formatTime(selectedFrame.time))
-                            }
-
-                            VStack(alignment: .leading) {
-                                Text("质量")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
-                                Text(String(format: "%.2f%%", selectedFrame.qualityScore * 100))
-                                    .foregroundStyle(selectedFrame.qualityScore >= 0.8 ? .green : selectedFrame.qualityScore >= 0.5 ? .orange : .red)
-                            }
-
-                            VStack(alignment: .leading) {
-                                Text("来源")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
-                                Text(selectedFrame.isReplaced ? "智能替换" : "原始帧")
-                                    .foregroundStyle(selectedFrame.isReplaced ? .orange : .gray)
-                            }
-                        }
-
-                        if let filePath = selectedFrame.filePath {
-                            HStack {
-                                Text("保存路径")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
-
-                                Text(filePath.lastPathComponent)
-                                    .font(.system(size: 12))
-                                    .lineLimit(1)
-                            }
-
-                            Button("在访达中显示") {
-                                NSWorkspace.shared.activateFileViewerSelecting([filePath])
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                        }
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(10)
-    }
-
-}
-
-struct FrameThumbnail: View {
-    let frame: VideoScreenshotExtractor.ExtractedFrame
-    let index: Int
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Image(nsImage: NSImage(cgImage: frame.image, size: CGSize(width: frame.image.width, height: frame.image.height)))
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 80)
-                .cornerRadius(4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
-                )
-                .overlay(
-                    frame.isReplaced ? Image(systemName: "arrow.refresh")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.orange)
-                        .padding(2)
-                        .background(Color.white.opacity(0.8))
-                        .cornerRadius(2)
-                        .offset(x: 4, y: 4) : nil
-                )
-
-            Text(formatTime(frame.time))
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-
-            HStack {
-                Text("\(index + 1)")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.gray)
-
-                Spacer()
-
-                if frame.qualityScore < 0.8 {
-                    Image(systemName: "alert.triangle")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.orange)
-                }
-            }
-        }
-        .onTapGesture {
-            onSelect()
-        }
-    }
-
-    private func formatTime(_ seconds: Double) -> String {
-        let s = Int(seconds) % 60
-        let m = Int(seconds) / 60 % 60
-        return String(format: "%02d:%02d", m, s)
-    }
-}
-
-struct KeyboardShortcutsModifier: ViewModifier {
-    @Binding var isPlaying: Bool
-    let videoURL: URL?
-    @Binding var currentTime: Double
-    let videoDuration: Double
-    let togglePlay: () -> Void
-    let seekToTime: (Double) -> Void
-
-    @State private var eventMonitor: Any?
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                    handleKeyEvent(event)
-                    return event
-                }
-            }
-            .onDisappear {
-                if let monitor = eventMonitor {
-                    NSEvent.removeMonitor(monitor)
-                    eventMonitor = nil
-                }
-            }
-    }
-
-    private func handleKeyEvent(_ event: NSEvent) {
-        guard videoURL != nil else { return }
-
-        switch event.keyCode {
-        case 49: // Space
-            if isPlaying || videoURL != nil {
-                togglePlay()
-            }
-        case 123: // Left arrow
-            seekToTime(max(0, currentTime - 1))
-        case 124: // Right arrow
-            seekToTime(min(videoDuration, currentTime + 1))
-        default:
-            break
-        }
-    }
-}
