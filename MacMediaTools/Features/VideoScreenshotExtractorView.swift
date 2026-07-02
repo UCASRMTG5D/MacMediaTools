@@ -32,6 +32,12 @@ struct VideoScreenshotExtractorView: View {
     // 输出路径
     @State private var outputDirectory: URL?
 
+    // 线程安全的提取控制（供 actor 在后台线程安全读取）
+    private final class ExtractionControl: @unchecked Sendable {
+        var isPaused = false
+        var shouldCancel = false
+    }
+
     // 提取状态
     @State private var isProcessing = false
     @State private var isPaused = false
@@ -40,19 +46,27 @@ struct VideoScreenshotExtractorView: View {
     @State private var totalFrames: Int = 0
     @State private var statusMessage = ""
     @State private var estimatedRemainingTime: TimeInterval?
+    private let extractionControl = ExtractionControl()
+    @State private var expectedFrameCount: Int = 0
 
     // 结果展示
-    @State private var extractedFrames: [VideoScreenshotExtractor.ExtractedFrame] = []
+    @State private var extractionResult: VideoScreenshotExtractor.ExtractionResult?
+    @State private var filterMode: VideoScreenshotExtractor.FilterMode = .all
     @State private var selectedFrame: VideoScreenshotExtractor.ExtractedFrame?
 
     // 错误处理
     @State private var errorMessage = ""
     @State private var showError = false
-    @State private var showSuccess = false
-    @State private var successMessage = ""
+    @State private var showSaveSuccess = false
+    @State private var saveSuccessPath = ""
 
     // 快捷键支持
     @FocusState private var focusedField: String?
+
+    private var displayedFrames: [VideoScreenshotExtractor.ExtractedFrame] {
+        guard let result = extractionResult else { return [] }
+        return filterMode.frames(from: result)
+    }
 
     // 操作日志
     @ObservedObject private var logManager = OperationLogManager.shared
@@ -72,15 +86,15 @@ struct VideoScreenshotExtractorView: View {
         } message: {
             Text(errorMessage)
         }
-        .alert("提取完成", isPresented: $showSuccess) {
+        .alert("提取完成", isPresented: $showSaveSuccess) {
             Button("打开目录") {
-                if let outputDirectory = extractedFrames.first?.filePath?.deletingLastPathComponent() {
-                    NSWorkspace.shared.open(outputDirectory)
+                if let path = saveSuccessPath.isEmpty ? nil : saveSuccessPath {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: path))
                 }
             }
             Button("确定", role: .cancel) { }
         } message: {
-            Text(successMessage)
+            Text("截图已保存到 \(saveSuccessPath)")
         }
         .onDisappear {
             if let playbackEndObserver {
@@ -97,6 +111,12 @@ struct VideoScreenshotExtractorView: View {
             togglePlay: togglePlay,
             seekToTime: seekToTime
         ))
+        .onChange(of: startTime) { newValue in
+            startTimeString = formatTime(newValue)
+        }
+        .onChange(of: endTime) { newValue in
+            endTimeString = formatTime(newValue)
+        }
     }
 
     private var sidebarPanel: some View {
@@ -189,6 +209,9 @@ struct VideoScreenshotExtractorView: View {
                                 Text("质量阈值: \(String(format: "%.0f", qualityThreshold * 100))%")
                                     .font(.system(size: 12))
                                 Slider(value: $qualityThreshold, in: 0...1, step: 0.05)
+                                Text("阈值越高，保留的截图越多")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
                             }
                             .padding(.leading, 12)
                         }
@@ -199,7 +222,7 @@ struct VideoScreenshotExtractorView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("相似度阈值: \(String(format: "%.0f", duplicateThreshold * 100))%")
                                     .font(.system(size: 12))
-                                Slider(value: $duplicateThreshold, in: 0.05...1, step: 0.05)
+                                Slider(value: $duplicateThreshold, in: 0.01...1, step: 0.01)
                                 Text("阈值越低，判定为相似的条件越严格")
                                     .font(.system(size: 10))
                                     .foregroundStyle(.secondary)
@@ -251,6 +274,7 @@ struct VideoScreenshotExtractorView: View {
                     if isProcessing {
                         Button("取消") {
                             shouldCancel = true
+                            extractionControl.shouldCancel = true
                         }
                         .buttonStyle(.bordered)
                         .foregroundStyle(.red)
@@ -390,13 +414,56 @@ struct VideoScreenshotExtractorView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                ThumbnailPreviewPanel(
-                    frames: extractedFrames,
-                    selectedFrame: $selectedFrame,
-                    onExportZip: exportAsZip
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 16)
+                // 提取结果：4种筛选模式
+                if let result = extractionResult {
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("筛选结果")
+                                .font(.headline)
+                            Spacer()
+                            Button("保存到...") {
+                                saveCurrentFrames(result: result)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(displayedFrames.isEmpty)
+                        }
+
+                        // 4种模式卡片
+                        HStack(spacing: 8) {
+                            ForEach(VideoScreenshotExtractor.FilterMode.allCases) { mode in
+                                let count = mode.frames(from: result).count
+                                Button {
+                                    filterMode = mode
+                                } label: {
+                                    VStack(spacing: 2) {
+                                        Text(mode.rawValue)
+                                            .font(.system(size: 12, weight: filterMode == mode ? .semibold : .regular))
+                                        Text("\(count) 帧")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundStyle(filterMode == mode ? Color.blue : .primary)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(filterMode == mode ? Color.blue.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(filterMode == mode ? Color.blue : Color.gray.opacity(0.3), lineWidth: filterMode == mode ? 2 : 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .padding(.bottom, 4)
+
+                    ThumbnailPreviewPanel(
+                        frames: displayedFrames,
+                        selectedFrame: $selectedFrame
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 16)
+                }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -519,8 +586,13 @@ struct VideoScreenshotExtractorView: View {
         isProcessing = true
         isPaused = false
         shouldCancel = false
+        extractionControl.isPaused = false
+        extractionControl.shouldCancel = false
         progress = 0
-        extractedFrames.removeAll()
+        extractionResult = nil
+        
+        let timeRange = endTime - startTime
+        expectedFrameCount = max(1, Int(timeRange / interval) + 1)
 
         let settings = VideoScreenshotExtractor.ExtractionSettings(
             startTime: startTime,
@@ -557,23 +629,20 @@ struct VideoScreenshotExtractorView: View {
                         )
                     }
                 },
-                pauseHandler: { self.isPaused },
-                cancelHandler: { self.shouldCancel }
+                pauseHandler: { self.extractionControl.isPaused },
+                cancelHandler: { self.extractionControl.shouldCancel }
             )
 
             await MainActor.run {
-                self.extractedFrames = result.extractedFrames
+                self.extractionResult = result
+                self.filterMode = .all
                 self.isProcessing = false
-                let dedupNote = self.enableDuplicateFilter ? "（已去重）" : ""
-                self.successMessage = "成功提取 \(result.extractedFrames.count) 帧截图\(dedupNote)，已保存到 \(result.outputDirectory.path)"
-                self.showSuccess = true
 
                 logManager.logExtractionComplete(
-                    frameCount: result.extractedFrames.count,
-                    duration: 0 // 可以从日志中获取实际耗时
+                    frameCount: result.allFrames.count,
+                    duration: 0
                 )
 
-                // 清除任务状态
                 OperationLogManager.shared.clearLastTaskState()
             }
         } catch {
@@ -589,29 +658,39 @@ struct VideoScreenshotExtractorView: View {
 
     private func togglePause() {
         isPaused.toggle()
+        extractionControl.isPaused = isPaused
     }
 
     // MARK: - Output Management
 
-    private func exportAsZip() {
-        guard !extractedFrames.isEmpty else {
-            return
-        }
-
-        let panel = NSSavePanel()
+    private func saveCurrentFrames(result: VideoScreenshotExtractor.ExtractionResult) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
         panel.canCreateDirectories = true
-        panel.title = "保存ZIP文件"
-        panel.nameFieldStringValue = "screenshots.zip"
+        panel.title = "选择保存目录"
+        panel.message = "保存 \(filterMode.rawValue) (\(displayedFrames.count) 帧)"
 
-        if panel.runModal() == .OK, let url = panel.url {
-            let files = extractedFrames.compactMap { $0.filePath }
+        guard panel.runModal() == .OK, let targetDir = panel.url else { return }
 
-            Task {
-                do {
-                    try await VideoScreenshotExtractor.shared.exportAsZip(files: files, outputURL: url)
-                    NSWorkspace.shared.open(url.deletingLastPathComponent())
-                } catch {
-                    errorMessage = "打包失败: \(error.localizedDescription)"
+        // 在选择的目录下创建子文件夹
+        let folderName = "screenshots_\(currentTimestamp())"
+        let saveDir = targetDir.appendingPathComponent(folderName)
+
+        Task {
+            do {
+                try FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
+                let savedURLs = try await VideoScreenshotExtractor.shared.saveFrames(
+                    displayedFrames, to: saveDir, format: outputFormat
+                )
+                await MainActor.run {
+                    saveSuccessPath = saveDir.path
+                    showSaveSuccess = true
+                    logManager.logExtractionComplete(frameCount: savedURLs.count, duration: 0)
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "保存失败: \(error.localizedDescription)"
                     showError = true
                 }
             }

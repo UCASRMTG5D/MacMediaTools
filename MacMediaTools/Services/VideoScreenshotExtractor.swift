@@ -49,7 +49,7 @@ actor VideoScreenshotExtractor {
 		}
 	}
 
-    struct ExtractedFrame {
+    struct ExtractedFrame: @unchecked Sendable {
         let time: Double
         let image: CGImage
         let filePath: URL?
@@ -59,10 +59,31 @@ actor VideoScreenshotExtractor {
 
     struct ExtractionResult {
         let success: Bool
-        let extractedFrames: [ExtractedFrame]
+        let allFrames: [ExtractedFrame]
+        let qualityFilteredFrames: [ExtractedFrame]
+        let dedupedFrames: [ExtractedFrame]
+        let qualityAndDedupedFrames: [ExtractedFrame]
         let outputDirectory: URL
         let error: String?
         let logs: [String]
+    }
+
+    enum FilterMode: String, CaseIterable, Identifiable {
+        case all = "全部"
+        case quality = "质量筛选"
+        case dedup = "去重"
+        case qualityAndDedup = "筛选+去重"
+
+        var id: String { rawValue }
+
+        func frames(from result: ExtractionResult) -> [ExtractedFrame] {
+            switch self {
+            case .all: return result.allFrames
+            case .quality: return result.qualityFilteredFrames
+            case .dedup: return result.dedupedFrames
+            case .qualityAndDedup: return result.qualityAndDedupedFrames
+            }
+        }
     }
 
     struct ExtractionProgress {
@@ -134,7 +155,7 @@ actor VideoScreenshotExtractor {
 
     // MARK: - Quality Assessment
 
-    private func calculateImageSharpness(image: CGImage) -> Double {
+    nonisolated private func calculateImageSharpness(image: CGImage) -> Double {
         let width = image.width
         let height = image.height
         let bytesPerPixel = image.bitsPerPixel / 8
@@ -142,48 +163,71 @@ actor VideoScreenshotExtractor {
 
         guard let data = image.dataProvider?.data,
               let bytes = CFDataGetBytePtr(data) else {
-            return 0.5
+            return 50.0
         }
 
-        var gradientMagnitude = 0.0
+        // 确定像素通道偏移：支持 BGRA / ARGB / RGBA
+        let ri: Int, gi: Int, bi: Int
+        let byteOrder = image.bitmapInfo.rawValue & CGBitmapInfo.byteOrderMask.rawValue
+        if byteOrder == CGBitmapInfo.byteOrder32Little.rawValue {
+            ri = 2; gi = 1; bi = 0
+        } else {
+            let ai = CGImageAlphaInfo(rawValue: image.bitmapInfo.rawValue & CGBitmapInfo.alphaInfoMask.rawValue)
+            switch ai {
+            case .some(.first), .some(.premultipliedFirst), .some(.noneSkipFirst):
+                ri = 1; gi = 2; bi = 3
+            default:
+                ri = 0; gi = 1; bi = 2
+            }
+        }
+
+        // Step 1: Compute Y (luma) plane: Y = 0.299*R + 0.587*G + 0.114*B
+        var luma: [Double] = Array(repeating: 0, count: width * height)
+        for y in 0..<height {
+            let rowBase = y * bytesPerRow
+            let lumaBase = y * width
+            for x in 0..<width {
+                let idx = rowBase + x * bytesPerPixel
+                let r = Double(bytes[idx + ri])
+                let g = Double(bytes[idx + gi])
+                let b = Double(bytes[idx + bi])
+                luma[lumaBase + x] = 0.299 * r + 0.587 * g + 0.114 * b
+            }
+        }
+
+        // Step 2: Sobel 3x3 edge magnitude on luma plane
+        // Gx: [[-1, 0, +1], [-2, 0, +2], [-1, 0, +1]]
+        // Gy: [[-1, -2, -1], [ 0,  0,  0], [+1, +2, +1]]
+        var totalMagnitude = 0.0
         var pixelCount = 0
 
-        for y in 0..<height-1 {
-            for x in 0..<width-1 {
-                let idx1 = y * bytesPerRow + x * bytesPerPixel
-                let idx2 = y * bytesPerRow + (x + 1) * bytesPerPixel
-                let idx3 = (y + 1) * bytesPerRow + x * bytesPerPixel
+        for y in 1..<(height - 1) {
+            let lumaBase = y * width
+            let prevBase = (y - 1) * width
+            let nextBase = (y + 1) * width
+            for x in 1..<(width - 1) {
+                let tl = luma[prevBase + x - 1]
+                let tc = luma[prevBase + x]
+                let tr = luma[prevBase + x + 1]
+                let ml = luma[lumaBase + x - 1]
+                let mr = luma[lumaBase + x + 1]
+                let bl = luma[nextBase + x - 1]
+                let bc = luma[nextBase + x]
+                let br = luma[nextBase + x + 1]
 
-                if idx1 + 2 < bytesPerRow * height && idx2 + 2 < bytesPerRow * height && idx3 + 2 < bytesPerRow * height {
-                    let r1 = Double(bytes[idx1])
-                    let g1 = Double(bytes[idx1 + 1])
-                    let b1 = Double(bytes[idx1 + 2])
+                let gx = (-1)*tl + 1*tr + (-2)*ml + 2*mr + (-1)*bl + 1*br
+                let gy = (-1)*tl + (-2)*tc + (-1)*tr + 1*bl + 2*bc + 1*br
 
-                    let r2 = Double(bytes[idx2])
-                    let g2 = Double(bytes[idx2 + 1])
-                    let b2 = Double(bytes[idx2 + 2])
-
-                    let r3 = Double(bytes[idx3])
-                    let g3 = Double(bytes[idx3 + 1])
-                    let b3 = Double(bytes[idx3 + 2])
-
-                    let dx = sqrt(pow(r2 - r1, 2) + pow(g2 - g1, 2) + pow(b2 - b1, 2))
-                    let dy = sqrt(pow(r3 - r1, 2) + pow(g3 - g1, 2) + pow(b3 - b1, 2))
-
-                    gradientMagnitude += dx + dy
-                    pixelCount += 1
-                }
+                totalMagnitude += sqrt(gx * gx + gy * gy)
+                pixelCount += 1
             }
         }
 
         if pixelCount == 0 {
-            return 0.5
+            return 50.0
         }
 
-        let avgGradient = gradientMagnitude / Double(pixelCount)
-        let normalizedScore = min(avgGradient / 200.0, 1.0)
-
-        return normalizedScore
+        return totalMagnitude / Double(pixelCount)
     }
 
     // MARK: - Image Similarity & Dedup
@@ -202,6 +246,21 @@ actor VideoScreenshotExtractor {
             return Array(repeating: 0.5, count: size * size)
         }
 
+        // 确定像素通道偏移：支持 BGRA / ARGB / RGBA
+        let ri: Int, gi: Int, bi: Int
+        let byteOrder = image.bitmapInfo.rawValue & CGBitmapInfo.byteOrderMask.rawValue
+        if byteOrder == CGBitmapInfo.byteOrder32Little.rawValue {
+            ri = 2; gi = 1; bi = 0
+        } else {
+            let ai = CGImageAlphaInfo(rawValue: image.bitmapInfo.rawValue & CGBitmapInfo.alphaInfoMask.rawValue)
+            switch ai {
+            case .some(.first), .some(.premultipliedFirst), .some(.noneSkipFirst):
+                ri = 1; gi = 2; bi = 3
+            default:
+                ri = 0; gi = 1; bi = 2
+            }
+        }
+
         let bpp = image.bitsPerPixel / 8
         let row = image.bytesPerRow
         var hash = [Double]()
@@ -217,9 +276,9 @@ actor VideoScreenshotExtractor {
                         if x < width && y < height {
                             let idx = y * row + x * bpp
                             if idx + 2 < row * height {
-                                r += Double(bytes[idx])
-                                g += Double(bytes[idx + 1])
-                                b += Double(bytes[idx + 2])
+                                r += Double(bytes[idx + ri])
+                                g += Double(bytes[idx + gi])
+                                b += Double(bytes[idx + bi])
                                 count += 1
                             }
                         }
@@ -250,32 +309,23 @@ actor VideoScreenshotExtractor {
         return totalDiff / Double(h1.count)
     }
 
-    /// Filter frames: when multiple frames are similar (difference < threshold),
-    /// keep only the one with the highest qualityScore.
+    /// Filter frames using temporal sliding window dedup:
+    /// compare each frame against the last KEPT frame; skip if similar but
+    /// replace when the new frame has higher quality.
     func filterDuplicateFrames(_ frames: [ExtractedFrame], threshold: Double) -> [ExtractedFrame] {
         guard frames.count > 1 else { return frames }
         let clampedThreshold = max(0, min(1, threshold))
         var kept = [ExtractedFrame]()
-        var used = Set<Int>()
+        kept.reserveCapacity(frames.count)
+        kept.append(frames[0])
 
-        for i in 0..<frames.count {
-            guard !used.contains(i) else { continue }
-            var bestIndex = i
-            var cluster = [i]
-            used.insert(i)
-
-            for j in (i + 1)..<frames.count {
-                guard !used.contains(j) else { continue }
-                let diff = imageDifference(frames[i].image, frames[j].image)
-                if diff < clampedThreshold {
-                    cluster.append(j)
-                    used.insert(j)
-                    if frames[j].qualityScore > frames[bestIndex].qualityScore {
-                        bestIndex = j
-                    }
-                }
+        for i in 1..<frames.count {
+            let diff = imageDifference(kept.last!.image, frames[i].image)
+            if diff >= clampedThreshold {
+                kept.append(frames[i])
+            } else if frames[i].qualityScore > kept.last!.qualityScore {
+                kept[kept.count - 1] = frames[i]
             }
-            kept.append(frames[bestIndex])
         }
         return kept
     }
@@ -306,8 +356,10 @@ actor VideoScreenshotExtractor {
         let asset = AVURLAsset(url: videoURL)
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
-        generator.requestedTimeToleranceBefore = .zero
-        generator.requestedTimeToleranceAfter = .zero
+        // 使用 25% 间隔的容差，避免因精确帧定位失败而丢帧
+        let tolerance = CMTime(seconds: settings.interval * 0.25, preferredTimescale: 600)
+        generator.requestedTimeToleranceBefore = tolerance
+        generator.requestedTimeToleranceAfter = tolerance
 
         // 计算时间点
         let timeRange = settings.endTime - settings.startTime
@@ -332,129 +384,174 @@ actor VideoScreenshotExtractor {
         try FileManager.default.createDirectory(at: finalOutputDir, withIntermediateDirectories: true)
         logs.append("[\(timestamp())] 输出目录: \(finalOutputDir.path)")
 
-        for (index, targetTime) in timePoints.enumerated() {
-            // 检查暂停
-            while pauseHandler() {
-                if cancelHandler() {
-                    logs.append("[\(timestamp())] 用户取消操作")
-                    throw ScreenshotExtractorError.userCancelled
-                }
-                try await Task.sleep(nanoseconds: 100_000_000)
+        // 并行提取：将时间点分块，每块独立提取
+        let processorCount = max(2, ProcessInfo.processInfo.processorCount)
+        let chunkSize = max(1, (timePoints.count + processorCount - 1) / processorCount)
+
+        // 线程安全的进度追踪器
+        actor ProgressTracker {
+            nonisolated let total: Int
+            nonisolated let startTime: Date
+            nonisolated let handler: (ExtractionProgress) -> Void
+            var completed = 0
+
+            init(total: Int, startTime: Date, handler: @escaping (ExtractionProgress) -> Void) {
+                self.total = total
+                self.startTime = startTime
+                self.handler = handler
             }
 
-            // 检查取消
-            if cancelHandler() {
-                logs.append("[\(timestamp())] 用户取消操作")
-                throw ScreenshotExtractorError.userCancelled
-            }
-
-            let progress = Double(index) / Double(timePoints.count)
-            let elapsed = Date().timeIntervalSince(startTime)
-            let estimatedRemaining = progress > 0 ? elapsed / progress * (1 - progress) : Double.infinity
-
-            progressHandler(ExtractionProgress(
-                current: index,
-                total: timePoints.count,
-                status: "正在提取第 \(index + 1)/\(timePoints.count) 帧...",
-                estimatedRemainingTime: estimatedRemaining
-            ))
-
-            do {
-                let time = CMTime(seconds: targetTime, preferredTimescale: 600)
-                var image = try generator.copyCGImage(at: time, actualTime: nil)
-                var qualityScore = calculateImageSharpness(image: image)
-                var isReplaced = false
-                var actualTime = targetTime
-
-                // 质量检查和智能替换
-                if settings.enableQualityCheck && qualityScore < settings.qualityThreshold {
-                    logs.append("[\(timestamp())] 帧 \(index + 1) 质量较低 (\(String(format: "%.2f", qualityScore))), 正在寻找替代帧")
-
-                    // 在前后1秒范围内寻找最佳帧
-                    let searchRange = 1.0
-                    let searchInterval = 0.1
-                    var bestImage = image
-                    var bestScore = qualityScore
-                    var bestTime = targetTime
-
-                    for offset in stride(from: -searchRange, through: searchRange, by: searchInterval) {
-                        let searchTime = targetTime + offset
-                        if searchTime < settings.startTime || searchTime > settings.endTime {
-                            continue
-                        }
-
-                        do {
-                            let searchCMTime = CMTime(seconds: searchTime, preferredTimescale: 600)
-                            let candidateImage = try generator.copyCGImage(at: searchCMTime, actualTime: nil)
-                            let candidateScore = calculateImageSharpness(image: candidateImage)
-
-                            if candidateScore > bestScore {
-                                bestScore = candidateScore
-                                bestImage = candidateImage
-                                bestTime = searchTime
-                            }
-                        } catch {
-                            continue
-                        }
-                    }
-
-                    if bestScore > qualityScore {
-                        image = bestImage
-                        qualityScore = bestScore
-                        actualTime = bestTime
-                        isReplaced = true
-                        logs.append("[\(timestamp())] 帧 \(index + 1) 已替换为 \(formatTime(actualTime))，质量提升至 \(String(format: "%.2f", qualityScore))")
-                    } else {
-                        logs.append("[\(timestamp())] 帧 \(index + 1) 未找到更好的替代帧")
-                    }
-                }
-
-                // 保存图片
-                let bitmapRep = NSBitmapImageRep(cgImage: image)
-                let imageData: Data?
-                let fileExtension: String
-
-                switch settings.outputFormat {
-                case .png:
-                    imageData = bitmapRep.representation(using: .png, properties: [:])
-                    fileExtension = "png"
-                case .jpeg:
-                    imageData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: settings.qualityThreshold])
-                    fileExtension = "jpg"
-                }
-
-                guard let data = imageData else {
-                    logs.append("[\(timestamp())] 帧 \(index + 1) 编码失败")
-                    continue
-                }
-
-                let fileName = "\(videoName)_\(formatTimestamp(actualTime)).\(fileExtension)"
-                let fileURL = finalOutputDir.appendingPathComponent(fileName)
-                try data.write(to: fileURL)
-
-                extractedFrames.append(ExtractedFrame(
-                    time: actualTime,
-                    image: image,
-                    filePath: fileURL,
-                    qualityScore: qualityScore,
-                    isReplaced: isReplaced
+            func reportOne() {
+                completed += 1
+                let elapsed = Date().timeIntervalSince(startTime)
+                let pc = Double(completed) / Double(total)
+                let remaining = pc > 0 ? elapsed / pc * (1 - pc) : Double.infinity
+                handler(ExtractionProgress(
+                    current: completed, total: total,
+                    status: "正在提取第 \(completed)/\(total) 帧...",
+                    estimatedRemainingTime: remaining
                 ))
-
-                logs.append("[\(timestamp())] 帧 \(index + 1) 保存成功 (\(formatTime(actualTime)))")
-
-            } catch {
-                logs.append("[\(timestamp())] 帧 \(index + 1) 提取失败: \(error.localizedDescription)")
-                continue
             }
         }
 
-        // 内容去重：对相似截图只保留质量最高的
+        let progressTracker = ProgressTracker(total: timePoints.count, startTime: startTime, handler: progressHandler)
+        var allFrames: [ExtractedFrame] = []
+        var allLogs: [String] = []
+
+        try await withThrowingTaskGroup(of: (frames: [ExtractedFrame], logs: [String]).self) { group in
+            for chunkIndex in 0..<processorCount {
+                let startIdx = chunkIndex * chunkSize
+                guard startIdx < timePoints.count else { break }
+                let endIdx = min(startIdx + chunkSize, timePoints.count)
+                let chunk = Array(timePoints[startIdx..<endIdx])
+
+                group.addTask { [self] in
+                    while pauseHandler() {
+                        if cancelHandler() { throw ScreenshotExtractorError.userCancelled }
+                        try await Task.sleep(nanoseconds: 100_000_000)
+                    }
+                    if cancelHandler() { throw ScreenshotExtractorError.userCancelled }
+
+                    let gen = AVAssetImageGenerator(asset: AVURLAsset(url: videoURL))
+                    gen.appliesPreferredTrackTransform = true
+                    gen.requestedTimeToleranceBefore = tolerance
+                    gen.requestedTimeToleranceAfter = tolerance
+
+                    var frames: [ExtractedFrame] = []
+                    var logs: [String] = []
+
+                    for (localIdx, targetTime) in chunk.enumerated() {
+                        while pauseHandler() {
+                            if cancelHandler() { throw ScreenshotExtractorError.userCancelled }
+                            try await Task.sleep(nanoseconds: 100_000_000)
+                        }
+                        if cancelHandler() { throw ScreenshotExtractorError.userCancelled }
+                        let globalIdx = startIdx + localIdx
+                        do {
+                            let time = CMTime(seconds: targetTime, preferredTimescale: 600)
+                            var image = try gen.copyCGImage(at: time, actualTime: nil)
+                            var qualityScore = calculateImageSharpness(image: image)
+                            var isReplaced = false
+                            var actualTime = targetTime
+
+                            if settings.enableQualityCheck {
+                                let searchRange = 1.0
+                                let searchInterval = 0.1
+                                var bestImage = image
+                                var bestScore = qualityScore
+                                var bestTime = actualTime
+
+                                for offset in stride(from: -searchRange, through: searchRange, by: searchInterval) {
+                                    if cancelHandler() { throw ScreenshotExtractorError.userCancelled }
+                                    let searchTime = targetTime + offset
+                                    if searchTime < settings.startTime || searchTime > settings.endTime { continue }
+                                    do {
+                                        let st = CMTime(seconds: searchTime, preferredTimescale: 600)
+                                        let candidateImage = try gen.copyCGImage(at: st, actualTime: nil)
+                                        let candidateScore = calculateImageSharpness(image: candidateImage)
+                                        if candidateScore > bestScore {
+                                            bestScore = candidateScore
+                                            bestImage = candidateImage
+                                            bestTime = searchTime
+                                        }
+                                    } catch { continue }
+                                }
+
+                                if bestScore > qualityScore {
+                                    image = bestImage
+                                    qualityScore = bestScore
+                                    actualTime = bestTime
+                                    isReplaced = true
+                                    logs.append("[\(timestamp())] 帧 \(globalIdx + 1) 已替换为 \(formatTime(actualTime))，质量提升至 \(String(format: "%.2f", qualityScore))")
+                                }
+                            }
+
+                            frames.append(ExtractedFrame(
+                                time: actualTime, image: image, filePath: nil,
+                                qualityScore: qualityScore, isReplaced: isReplaced
+                            ))
+                            logs.append("[\(timestamp())] 帧 \(globalIdx + 1) 提取成功 (\(formatTime(actualTime)))")
+
+                        } catch {
+                            logs.append("[\(timestamp())] 帧 \(globalIdx + 1) 提取失败: \(error.localizedDescription)")
+                        }
+
+                        await progressTracker.reportOne()
+                    }
+
+                    return (frames, logs)
+                }
+            }
+
+            for try await chunkResult in group {
+                allFrames.append(contentsOf: chunkResult.frames)
+                allLogs.append(contentsOf: chunkResult.logs)
+            }
+        }
+
+        // 按时间排序
+        allFrames.sort { $0.time < $1.time }
+        extractedFrames = allFrames
+        logs.append(contentsOf: allLogs)
+
+        // 4种筛选模式
+        // 1) 质量筛选：按百分位保留质量分靠前的帧
+        // （calculateImageSharpness 对自然视频输出 0.02-0.25，绝对阈值 0.85 永远筛不出帧）
+        let qualityFiltered: [ExtractedFrame]
+        if settings.enableQualityCheck {
+            let keepCount = max(1, Int(Double(extractedFrames.count) * settings.qualityThreshold))
+            qualityFiltered = extractedFrames
+                .enumerated()
+                .sorted { $0.element.qualityScore > $1.element.qualityScore }
+                .prefix(keepCount)
+                .sorted { $0.offset < $1.offset }
+                .map { $0.element }
+            logs.append("[\(timestamp())] 质量筛选（百分位，阈值 \(String(format: "%.2f", settings.qualityThreshold))）：\(extractedFrames.count) → \(qualityFiltered.count) 帧")
+        } else {
+            qualityFiltered = extractedFrames
+        }
+
+        // 2) 去重：时序滑动窗口
+        let deduped: [ExtractedFrame]
         if settings.enableDuplicateFilter && extractedFrames.count > 1 {
-            let beforeCount = extractedFrames.count
             logs.append("[\(timestamp())] 开始内容去重，阈值: \(String(format: "%.2f", settings.duplicateThreshold))")
-            extractedFrames = filterDuplicateFrames(extractedFrames, threshold: settings.duplicateThreshold)
-            let removed = beforeCount - extractedFrames.count
-            logs.append("[\(timestamp())] 内容去重完成，移除了 \(removed) 帧相似截图，剩余 \(extractedFrames.count) 帧")
+            deduped = filterDuplicateFrames(extractedFrames, threshold: settings.duplicateThreshold)
+            logs.append("[\(timestamp())] 去重完成：\(extractedFrames.count) → \(deduped.count) 帧")
+        } else {
+            deduped = extractedFrames
+        }
+
+        // 3) 筛选+去重：先质量筛选，再去重
+        let qualityAndDeduped: [ExtractedFrame]
+        if settings.enableQualityCheck && settings.enableDuplicateFilter && qualityFiltered.count > 1 {
+            qualityAndDeduped = filterDuplicateFrames(qualityFiltered, threshold: settings.duplicateThreshold)
+            logs.append("[\(timestamp())] 筛选+去重：\(extractedFrames.count) → \(qualityAndDeduped.count) 帧")
+        } else if settings.enableQualityCheck {
+            qualityAndDeduped = qualityFiltered
+        } else if settings.enableDuplicateFilter {
+            qualityAndDeduped = deduped
+        } else {
+            qualityAndDeduped = extractedFrames
         }
 
         progressHandler(ExtractionProgress(
@@ -467,6 +564,7 @@ actor VideoScreenshotExtractor {
         let totalTime = Date().timeIntervalSince(startTime)
         logs.append("[\(timestamp())] 提取完成，共 \(extractedFrames.count) 帧，耗时 \(String(format: "%.2f", totalTime)) 秒")
         logs.append("[\(timestamp())] 平均速度: \(String(format: "%.2f", Double(extractedFrames.count) / totalTime)) 帧/秒")
+        logs.append("[\(timestamp())] 预期 \(frameCount) 帧，实际提取 \(extractedFrames.count) 帧（差异: \(frameCount - extractedFrames.count)）")
 
         if extractedFrames.isEmpty {
             throw ScreenshotExtractorError.noFramesExtracted
@@ -474,11 +572,40 @@ actor VideoScreenshotExtractor {
 
         return ExtractionResult(
             success: true,
-            extractedFrames: extractedFrames,
+            allFrames: extractedFrames,
+            qualityFilteredFrames: qualityFiltered,
+            dedupedFrames: deduped,
+            qualityAndDedupedFrames: qualityAndDeduped,
             outputDirectory: finalOutputDir,
             error: nil,
             logs: logs
         )
+    }
+
+    // MARK: - Batch Save
+
+    func saveFrames(_ frames: [ExtractedFrame], to directory: URL, format: ExtractionSettings.OutputFormat) async throws -> [URL] {
+        var savedURLs: [URL] = []
+        let videoName = "screenshots"
+        for (index, frame) in frames.enumerated() {
+            let bitmapRep = NSBitmapImageRep(cgImage: frame.image)
+            let imageData: Data?
+            let fileExtension: String
+            switch format {
+            case .png:
+                imageData = bitmapRep.representation(using: .png, properties: [:])
+                fileExtension = "png"
+            case .jpeg:
+                imageData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
+                fileExtension = "jpg"
+            }
+            guard let data = imageData else { continue }
+            let fileName = "\(videoName)_\(formatFileNameTimestamp(frame.time)).\(fileExtension)"
+            let fileURL = directory.appendingPathComponent(fileName)
+            try data.write(to: fileURL)
+            savedURLs.append(fileURL)
+        }
+        return savedURLs
     }
 
     // MARK: - Batch Export (ZIP)
@@ -513,11 +640,11 @@ actor VideoScreenshotExtractor {
 
     // MARK: - Utility Methods
 
-    private func timestamp() -> String {
+    nonisolated private func timestamp() -> String {
         currentTimestamp()
     }
 
-    private func formatTimestamp(_ seconds: Double) -> String {
+    nonisolated private func formatTimestamp(_ seconds: Double) -> String {
         formatFileNameTimestamp(seconds)
     }
 }
