@@ -1,6 +1,7 @@
 import AVFoundation
 import AppKit
 import Foundation
+import ImageIO
 
 // MARK: - dHash Per-frame Fingerprint
 
@@ -227,6 +228,10 @@ enum VideoHashCache {
 		let modDate = (attr[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
 		let createDate = (attr[.creationDate] as? Date)?.timeIntervalSince1970 ?? 0
 
+		if url.pathExtension.lowercased() == "gif" {
+			return extractGIFHashes(url: url, fileSize: fileSize, modDate: modDate, createDate: createDate)
+		}
+
 		let asset = AVURLAsset(url: url)
 		guard let videoTrack = try? await asset.loadTracks(withMediaType: .video).first else { return nil }
 		let duration = try? await asset.load(.duration)
@@ -278,6 +283,82 @@ enum VideoHashCache {
 		)
 	}
 
+	// MARK: - GIF Frame Extraction
+
+	private static func extractGIFHashes(url: URL, fileSize: UInt64, modDate: TimeInterval, createDate: TimeInterval) -> ExtractedHashes? {
+		guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+		let frameCount = CGImageSourceGetCount(source)
+		guard frameCount > 0 else { return nil }
+
+		var cumulativeTimes: [Double] = []
+		cumulativeTimes.reserveCapacity(frameCount)
+		var cumulativeTime: Double = 0
+
+		for i in 0..<frameCount {
+			let rawDelay: Double
+			if let properties = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [String: Any],
+			   let gifDict = properties[kCGImagePropertyGIFDictionary as String] as? [String: Any] {
+				rawDelay = gifDict[kCGImagePropertyGIFUnclampedDelayTime as String] as? Double
+					?? gifDict[kCGImagePropertyGIFDelayTime as String] as? Double
+					?? 0.1
+			} else {
+				rawDelay = 0.1
+			}
+			let delay = max(rawDelay, 0.02)
+			cumulativeTime += delay
+			cumulativeTimes.append(cumulativeTime)
+		}
+
+		let totalDuration = cumulativeTimes.last ?? 0
+		guard totalDuration > 0.5 else { return nil }
+
+		let w: Double
+		let h: Double
+		if let firstProps = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
+			w = firstProps[kCGImagePropertyPixelWidth as String] as? Double ?? 0
+			h = firstProps[kCGImagePropertyPixelHeight as String] as? Double ?? 0
+		} else {
+			w = 0; h = 0
+		}
+
+		var hashes: [UInt64] = []
+		hashes.reserveCapacity(segmentCount)
+
+		for i in 0..<segmentCount {
+			let targetTime = totalDuration * Double(i + 1) / Double(segmentCount + 1)
+
+			var lo = 0
+			var hi = cumulativeTimes.count - 1
+			while lo < hi {
+				let mid = (lo + hi) / 2
+				if cumulativeTimes[mid] < targetTime {
+					lo = mid + 1
+				} else {
+					hi = mid
+				}
+			}
+			let frameIdx = lo
+
+			if let cgImage = CGImageSourceCreateImageAtIndex(source, frameIdx, nil) {
+				hashes.append(computeDHash(from: cgImage))
+			}
+		}
+
+		guard hashes.count == segmentCount else { return nil }
+
+		return ExtractedHashes(
+			url: url,
+			fileSize: fileSize,
+			modificationDate: modDate,
+			durationSeconds: totalDuration,
+			resolution: CGSize(width: w, height: h),
+			bitrate: 0,
+			frameRate: 0,
+			creationDate: createDate,
+			segmentHashes: hashes
+		)
+	}
+
 	/// Batch extract: process videos in parallel, update cache, return fresh results.
 	/// - `videos`: all video URLs
 	/// - `cacheDir`: directory where sharded cache files (*.json) live
@@ -300,7 +381,7 @@ enum VideoHashCache {
 		if sampleFraction >= 1.0 {
 			workingSet = videos
 		} else {
-			workingSet = videos.shuffled().prefix(max(1, Int(Double(videos.count) * sampleFraction))) + []
+			workingSet = Array(videos.shuffled().prefix(max(1, Int(Double(videos.count) * sampleFraction))))
 		}
 
 		let total = workingSet.count

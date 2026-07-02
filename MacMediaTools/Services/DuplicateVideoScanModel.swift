@@ -51,7 +51,12 @@ final class DuplicateVideoScanModel: ObservableObject {
 		}
 	}
 
-	private let videoExts: Set<String> = ["mp4", "mov", "m4v", "avi", "mkv"]
+	private let videoExts: Set<String> = ["mp4", "mov", "m4v", "avi", "mkv", "gif"]
+
+	private func countGIFs(in files: [URL]) -> Int {
+		files.filter { $0.pathExtension.lowercased() == "gif" }.count
+	}
+
 	private var scanTask: Task<Void, Never>?
 
 	// MARK: - Public API
@@ -86,7 +91,7 @@ final class DuplicateVideoScanModel: ObservableObject {
 
 			guard !Task.isCancelled else { return }
 			guard !files.isEmpty else {
-				statusText = "未找到视频文件"
+				statusText = "未找到视频或GIF文件"
 				return
 			}
 
@@ -124,6 +129,7 @@ final class DuplicateVideoScanModel: ObservableObject {
 		statusText = "扫描中：仅按 时长/大小/分辨率 分组"
 
 		var map: [String: (desc: String, urls: [URL])] = [:]
+		var errorCount = 0
 
 		for (idx, url) in files.enumerated() {
 			do {
@@ -136,7 +142,7 @@ final class DuplicateVideoScanModel: ObservableObject {
 				let key = "\(durationMs)|\(fileSize)|\(w)x\(h)"
 				let desc = "时长=\(durationMs)ms 大小=\(fileSize)B 分辨率=\(w)x\(h)"
 				map[key, default: (desc: desc, urls: [])].urls.append(url)
-			} catch {}
+			} catch { errorCount += 1 }
 
 			if idx % 5 == 0 || idx + 1 == files.count {
 				processedCount = idx + 1
@@ -151,7 +157,13 @@ final class DuplicateVideoScanModel: ObservableObject {
 			.sorted { $0.files.count > $1.files.count }
 
 		quickGroups = groups
-		statusText = "完成：共扫描 \(files.count) 个视频，发现 \(groups.count) 组重复"
+		let gifCount = countGIFs(in: files)
+		let videoCount = files.count - gifCount
+		if gifCount > 0 {
+			statusText = "完成：共扫描 \(videoCount) 个视频、\(gifCount) 个GIF，发现 \(groups.count) 组重复"
+		} else {
+			statusText = "完成：共扫描 \(files.count) 个视频，发现 \(groups.count) 组重复"
+		}
 	}
 
 	// MARK: - Deep Mode
@@ -159,7 +171,13 @@ final class DuplicateVideoScanModel: ObservableObject {
 	private func runDeep(files: [URL]) async {
 		totalCount = files.count
 		processedCount = 0
-		statusText = "扫描中：\(files.count) 个视频文件"
+		let scGifCount = countGIFs(in: files)
+		let scVideoCount = files.count - scGifCount
+		if scGifCount > 0 {
+			statusText = "扫描中：\(scVideoCount) 个视频、\(scGifCount) 个GIF"
+		} else {
+			statusText = "扫描中：\(files.count) 个视频文件"
+		}
 		deepPhase = "准备哈希缓存…"
 
 		guard let cacheDir = effectiveCacheDir else {
@@ -198,7 +216,7 @@ final class DuplicateVideoScanModel: ObservableObject {
 		guard !Task.isCancelled else { return }
 
 		guard let (_, extracted) = extractionResult, extracted.count >= 2 else {
-			statusText = "完成：需要至少 2 个有效视频才能聚类"
+			statusText = "完成：需要至少 2 个有效媒体文件才能聚类"
 			return
 		}
 
@@ -225,6 +243,10 @@ final class DuplicateVideoScanModel: ObservableObject {
 
 		deepClusters = clusters
 		deepPhase = ""
-		statusText = "完成：共扫描 \(files.count) 个视频，发现 \(clusters.count) 组内容相似\(sampledSuffix)"
+		if scGifCount > 0 {
+			statusText = "完成：共扫描 \(scVideoCount) 个视频、\(scGifCount) 个GIF，发现 \(clusters.count) 组内容相似\(sampledSuffix)"
+		} else {
+			statusText = "完成：共扫描 \(files.count) 个视频，发现 \(clusters.count) 组内容相似\(sampledSuffix)"
+		}
 	}
 }

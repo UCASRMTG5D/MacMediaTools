@@ -33,6 +33,10 @@ enum VideoToolkitError: LocalizedError {
 
 enum VideoToolkit {
 	static func readDisplayInfo(url: URL) async throws -> VideoDisplayInfo {
+		if url.pathExtension.lowercased() == "gif" {
+			return try readGIFDisplayInfo(url: url)
+		}
+
 		let asset = AVURLAsset(url: url)
 		let duration = try await asset.load(.duration)
 		guard let track = try await asset.loadTracks(withMediaType: .video).first else {
@@ -43,6 +47,38 @@ enum VideoToolkit {
 		let display = naturalSize.applying(preferredTransform)
 		let displaySize = CGSize(width: abs(display.width), height: abs(display.height))
 		return VideoDisplayInfo(displaySize: displaySize, durationSeconds: duration.seconds)
+	}
+
+	private static func readGIFDisplayInfo(url: URL) throws -> VideoDisplayInfo {
+		guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+			throw VideoToolkitError.noVideoTrack
+		}
+		let frameCount = CGImageSourceGetCount(source)
+		guard frameCount > 0 else {
+			throw VideoToolkitError.noVideoTrack
+		}
+
+		let firstProps = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any]
+		let width = firstProps?[kCGImagePropertyPixelWidth as String] as? Int ?? 0
+		let height = firstProps?[kCGImagePropertyPixelHeight as String] as? Int ?? 0
+
+		var totalDuration: Double = 0
+		for i in 0..<frameCount {
+			if let props = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [String: Any],
+			   let gifDict = props[kCGImagePropertyGIFDictionary as String] as? [String: Any] {
+				let delay = gifDict[kCGImagePropertyGIFUnclampedDelayTime as String] as? Double
+					?? gifDict[kCGImagePropertyGIFDelayTime as String] as? Double
+					?? 0.1
+				totalDuration += max(delay, 0.02)
+			} else {
+				totalDuration += 0.1
+			}
+		}
+
+		return VideoDisplayInfo(
+			displaySize: CGSize(width: width, height: height),
+			durationSeconds: totalDuration
+		)
 	}
 
 	/// 视频尺寸修改：输出为 MP4(H.264)+AAC
@@ -253,7 +289,7 @@ enum VideoToolkit {
 			let naturalSize = try await vTrack.load(.naturalSize)
 			let preferredTransform = try await vTrack.load(.preferredTransform)
 
-			if let _ = targetSize {
+			if targetSize != nil {
 				let display = naturalSize.applying(preferredTransform)
 				let displaySize = CGSize(width: abs(display.width), height: abs(display.height))
 				let tx = (renderSize.width - displaySize.width) / 2

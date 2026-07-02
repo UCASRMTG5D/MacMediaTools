@@ -7,6 +7,7 @@ final class PlayerItem: ObservableObject, Identifiable {
 	let id = UUID()
 	let url: URL
 	let player: AVPlayer
+	var isGIF: Bool { url.pathExtension.lowercased() == "gif" }
 	@Published var currentTime: Double = 0
 	@Published var duration: Double = 0
 	@Published var isPlaying = false
@@ -103,6 +104,23 @@ struct PlayerView: NSViewRepresentable {
 	}
 }
 
+// MARK: - GIFView (NSViewRepresentable)
+
+struct GIFView: NSViewRepresentable {
+	let url: URL
+
+	func makeNSView(context: Context) -> NSImageView {
+		let view = NSImageView()
+		view.imageScaling = .scaleProportionallyUpOrDown
+		view.animates = true
+		view.image = NSImage(contentsOf: url)
+		return view
+	}
+
+	func updateNSView(_ nsView: NSImageView, context: Context) {
+	}
+}
+
 // MARK: - VideoComparisonPanel
 
 struct VideoComparisonPanel: View {
@@ -186,54 +204,67 @@ struct VideoComparisonPanel: View {
 
 	private func playerColumn(item: PlayerItem) -> some View {
 		VStack(spacing: 4) {
-			// Video rendering
-			PlayerView(player: item.player)
-				.aspectRatio(16 / 9, contentMode: .fit)
-				.clipShape(RoundedRectangle(cornerRadius: 4))
-				.overlay(
-					RoundedRectangle(cornerRadius: 4)
-						.stroke(.separator, lineWidth: 0.5)
-				)
+			if item.isGIF {
+				GIFView(url: item.url)
+					.aspectRatio(16 / 9, contentMode: .fit)
+					.clipShape(RoundedRectangle(cornerRadius: 4))
+					.overlay(
+						RoundedRectangle(cornerRadius: 4)
+							.stroke(.separator, lineWidth: 0.5)
+					)
+			} else {
+				PlayerView(player: item.player)
+					.aspectRatio(16 / 9, contentMode: .fit)
+					.clipShape(RoundedRectangle(cornerRadius: 4))
+					.overlay(
+						RoundedRectangle(cornerRadius: 4)
+							.stroke(.separator, lineWidth: 0.5)
+					)
+			}
 
-			// File name
 			Text(item.url.lastPathComponent)
 				.font(.caption2)
 				.lineLimit(1)
 				.truncationMode(.middle)
 
-			// Local controls row
-			HStack(spacing: 6) {
-				Button(action: { item.togglePlay() }) {
-					Image(systemName: item.isPlaying ? "pause.fill" : "play.fill")
-						.frame(width: 12)
-				}
-				.buttonStyle(.borderless)
-				.help(item.isPlaying ? "暂停" : "播放")
+			if item.isGIF {
+				Text("GIF")
+					.font(.caption2)
+					.foregroundStyle(.secondary)
+			} else {
+				HStack(spacing: 6) {
+					Button(action: { item.togglePlay() }) {
+						Image(systemName: item.isPlaying ? "pause.fill" : "play.fill")
+							.frame(width: 12)
+					}
+					.buttonStyle(.borderless)
+					.help(item.isPlaying ? "暂停" : "播放")
 
-				Slider(
-					value: Binding(
-						get: { item.duration > 0 ? item.currentTime / item.duration : 0 },
-						set: { item.seek(to: $0) }
-					),
-					in: 0...1
-				)
-				.frame(width: 100)
-
-				HStack(spacing: 2) {
-					Image(systemName: "speaker.fill")
-						.imageScale(.small)
-						.foregroundStyle(.secondary)
 					Slider(
 						value: Binding(
-							get: { item.volume },
-							set: { item.volume = $0 }
+							get: { item.duration > 0 ? item.currentTime / item.duration : 0 },
+							set: { item.seek(to: $0) }
 						),
 						in: 0...1
 					)
-					.frame(width: 50)
+					.frame(width: 100)
+
+					HStack(spacing: 2) {
+						Image(systemName: "speaker.fill")
+							.imageScale(.small)
+							.foregroundStyle(.secondary)
+						Slider(
+							value: Binding(
+								get: { item.volume },
+								set: { item.volume = $0 }
+							),
+							in: 0...1
+						)
+						.frame(width: 50)
+					}
 				}
+				.font(.caption)
 			}
-			.font(.caption)
 		}
 	}
 }
