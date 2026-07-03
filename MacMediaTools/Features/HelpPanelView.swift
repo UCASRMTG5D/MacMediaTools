@@ -79,26 +79,17 @@ private let helpFeatures: [HelpFeature] = [
 		number: "6",
 		name: "重复视频检测",
 		icon: "video.badge.checkmark",
-		summary: "按时长 / 文件大小 / 分辨率分组匹配重复视频。",
+		summary: "支持快速模式和精细模式两种检测方式。",
 		details: [
-			"使用 AVFoundation 读取视频元数据",
-			"精度：时长毫秒级、大小字节级",
+			"快速模式：按时长 / 文件大小 / 分辨率分组",
+			"精细模式：dHash 内容指纹 → 分段哈希对比 → 连通分量聚类",
+			"哈希缓存可加速后续检测，每部约 700 字节",
+			"并排视频对比面板，同步播放 / 进度 / 音量，逐帧验证",
+			"按平均相似度百分比排序聚类",
 		]
 	),
 	HelpFeature(
 		number: "7",
-		name: "重复媒体综合检测",
-		icon: "rectangle.3.group.bubble.left",
-		summary: "统一检测照片（SHA256）和视频（特征匹配）的重复媒体。",
-		details: [
-			"按类型筛选（全部 / 仅照片 / 仅视频）",
-			"缩略图预览（系统图标）",
-			"匹配原因描述",
-			"分组管理，支持删除操作",
-		]
-	),
-	HelpFeature(
-		number: "8",
 		name: "文件复制工具",
 		icon: "doc.on.doc",
 		summary: "智能媒体文件复制，自动检测目标路径重复并生成带编号的文件名。",

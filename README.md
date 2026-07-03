@@ -1,6 +1,6 @@
 # MacMediaTools
 
-**纯本地 macOS SwiftUI 多媒体工具箱** — 视频处理、重复媒体检测，全部在本地完成。
+**纯本地 macOS SwiftUI 多媒体工具箱** — 视频处理、重复媒体检测与文件整理，全部在本地完成。
 
 > Apple Silicon（M 系列）优先，Intel Mac 亦可编译运行。
 
@@ -14,7 +14,6 @@
 | **批量截图** | 按时间间隔截取视频帧，支持智能质量筛选与替代帧搜索、内容去重 |
 | **重复照片检测** | 递归扫描，SHA256 内容哈希精确匹配 |
 | **重复视频检测** | 按时长 / 大小 / 分辨率分组匹配 |
-| **重复媒体综合检测** | 统一检测照片与视频重复，支持类型筛选与缩略图预览 |
 | **文件复制工具** | 智能复制媒体文件，自动检测重复并重命名 |
 
 ## 环境要求
@@ -86,21 +85,18 @@ xed .  # 或从 Xcode 打开 MacMediaTools.xcodeproj
 
 ### 6) 重复视频检测
 
-按时长 / 文件大小 / 分辨率分组。
+支持两种检测模式：
 
+**快速模式**：按时长 / 文件大小 / 分辨率分组。
 - 使用 `AVFoundation` 读取视频元数据
 - 精度：时长毫秒级、大小字节级
 
-### 7) 重复媒体综合检测
+**精细模式**：dHash 内容指纹 → 分段哈希对比 → 连通分量聚类。
+- 缓存哈希指纹可加速后续检测，每部视频约 700 字节
+- 支持视频对比面板，并排播放 + 同步进度条，逐帧对比验证
+- 按平均相似度百分比排序聚类
 
-统一检测照片（SHA256）和视频（特征匹配），支持：
-
-- 按类型筛选（全部 / 仅照片 / 仅视频）
-- 缩略图预览（系统图标）
-- 匹配原因描述
-- 分组管理，支持删除操作
-
-### 8) 文件复制工具
+### 7) 文件复制工具
 
 智能媒体文件复制，自动检测目标路径重复。
 
@@ -125,19 +121,25 @@ MacMediaTools/
 │   ├── AudioVideoToolkit.swift    # 音视频合成 / 分离
 │   ├── FileHasher.swift           # SHA256 流式哈希
 │   ├── FolderScanner.swift        # 递归文件扫描
-│   ├── DuplicateDetector.swift    # 重复媒体检测（actor）
+│   ├── DuplicateVideoScanModel.swift # 重复视频扫描引擎
+│   ├── VideoHashCache.swift       # 视频哈希缓存
+│   ├── SimilarVideoClusterer.swift # dHash 内容指纹聚类
+│   ├── WorkManager.swift          # 工作队列管理
 │   ├── OperationLogManager.swift  # 操作日志管理
 │   └── VideoScreenshotExtractor.swift # 批量截图引擎
+├── Components/
+│   ├── OpenPanelButton.swift      # 文件选择控件
+│   ├── VideoProgressSlider.swift  # 视频进度 / 范围选择滑块
+│   └── VideoComparisonPanel.swift # 视频并排对比播放器
 └── Features/
     ├── VideoCropResizeView.swift  # 宽高调整（图片+视频裁剪/调整）
-    ├── CropOverlay.swift          # 裁剪框拖拽组件
     ├── VideoConcatView.swift      # 视频拼接
     ├── AudioVideoEditorView.swift # 音视频编辑器
     ├── VideoScreenshotExtractorView.swift # 批量截图界面
     ├── DuplicatePhotoView.swift   # 重复照片检测
-    ├── DuplicateVideoView.swift   # 重复视频检测
-    ├── DuplicateMediaView.swift   # 综合重复检测
-    └── FileCopyView.swift         # 文件复制工具
+    ├── DuplicateVideoView.swift   # 重复视频检测（快速+精细模式）
+    ├── FileCopyView.swift         # 文件复制工具
+    └── HelpPanelView.swift        # 帮助说明
 ```
 
 ## 技术栈
