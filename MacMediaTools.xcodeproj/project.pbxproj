@@ -11,6 +11,7 @@
 		1BD3A00E2E0E8313F89267C2 /* KeyboardShortcutsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999837FEBF7F3C2671F458C0 /* KeyboardShortcutsModifier.swift */; };
 		278B558974432E0399340951 /* TrackRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */; };
 		2AB144B5C320FA623C975EA5 /* CropSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6194B9F0CD7D999A5178373F /* CropSettingsView.swift */; };
+		717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */; };
 		95773F51BD1B05D1D1ACBD45 /* FrameThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */; };
 		98737A7B28561321202875D4 /* ResizeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02BEB260C3573273D9070860 /* ResizeSettingsView.swift */; };
 		AA0000000000000000000101 /* MacMediaToolsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000201 /* MacMediaToolsApp.swift */; };
@@ -44,6 +45,7 @@
 		AA0000000000000000000129 /* VideoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000222 /* VideoComparisonPanel.swift */; };
 		AA0000000000000000000130 /* WorkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000223 /* WorkManager.swift */; };
 		AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000224 /* DuplicateVideoScanModel.swift */; };
+		AA0000000000000000000132 /* WelcomeDefaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000225 /* WelcomeDefaultView.swift */; };
 		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
 		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
 		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
@@ -87,6 +89,7 @@
 		AA0000000000000000000222 /* VideoComparisonPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoComparisonPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000223 /* WorkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkManager.swift; sourceTree = "<group>"; };
 		AA0000000000000000000224 /* DuplicateVideoScanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoScanModel.swift; sourceTree = "<group>"; };
+		AA0000000000000000000225 /* WelcomeDefaultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeDefaultView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -94,6 +97,7 @@
 		AA0000000000000000000403 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		AA0000000000000000000404 /* CryptoKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CryptoKit.framework; path = System/Library/Frameworks/CryptoKit.framework; sourceTree = SDKROOT; };
 		AA0000000000000000000405 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
+		F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HelpPanelView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +145,7 @@
 				AA0000000000000000000201 /* MacMediaToolsApp.swift */,
 				AA0000000000000000000202 /* RootView.swift */,
 				AA0000000000000000000219 /* MediaToolsUtilities.swift */,
+				AA0000000000000000000225 /* WelcomeDefaultView.swift */,
 			);
 			path = MacMediaTools;
 			sourceTree = "<group>";
@@ -213,6 +218,7 @@
 				975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */,
 				9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */,
 				02BEB260C3573273D9070860 /* ResizeSettingsView.swift */,
+				F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */,
 			);
 			path = MacMediaTools/Features;
 			sourceTree = SOURCE_ROOT;
@@ -321,6 +327,8 @@
 				BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */,
 				95773F51BD1B05D1D1ACBD45 /* FrameThumbnail.swift in Sources */,
 				98737A7B28561321202875D4 /* ResizeSettingsView.swift in Sources */,
+				AA0000000000000000000132 /* WelcomeDefaultView.swift in Sources */,
+				717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

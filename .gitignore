@@ -10,4 +10,4 @@ build/
 
 .opencode/
 .omo/run-continuation/
-.omo/bug-reports/
+bug-reports/

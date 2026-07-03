@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct RootView: View {
-	@State private var selection: ToolFeature? = .videoCropResize
+	@State private var selection: ToolFeature? = nil
+	@Environment(\.openWindow) private var openWindow
 
 	/// Lives here so DuplicateVideoView's scan continues running
 	/// when the user switches to another feature and back.
@@ -32,12 +33,15 @@ struct RootView: View {
 				case .fileCopy:
 					FileCopyView()
 				case nil:
-					Color.clear
+					WelcomeDefaultView()
 				}
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
 			.navigationTitle(selection?.rawValue ?? "")
 		}
 		.frame(minWidth: 1000, minHeight: 700)
+		.onReceive(NotificationCenter.default.publisher(for: .openHelpWindow)) { _ in
+			openWindow(id: "help")
+		}
 	}
 }
