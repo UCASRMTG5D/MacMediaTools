@@ -135,7 +135,7 @@ actor MyService {
 ```
 [1] 理解需求
      │
-[2] 读取 BUG_KNOWLEDGE.md (必须)
+[2] 前置知识检查 (必须 → pre-flight-knowledge-check)
      │
 [3] 规划 (如果是多步骤/跨模块任务 → ulw-plan)
      │
@@ -156,12 +156,16 @@ actor MyService {
 
 ### 2.2 各阶段详细流程
 
-#### Step 2 — 前置知识检查 (MANDATORY)
+#### Step 2 — 前置知识检查 (MANDATORY → pre-flight-knowledge-check)
 
-修改任何代码前：
-1. 阅读 `BUG_KNOWLEDGE.md` 的目录，找到与你修改的模块相关的条目
-2. 阅读对应条目的场景/规则/例外
-3. 如果发现新的 bug，在修复前先读对应知识，避免重复踩坑
+**调用 `pre-flight-knowledge-check` 完成以下检查：**
+
+1. 发现项目中的知识库文件（BUG_KNOWLEDGE.md、AGENTS.md 等）
+2. 根据本次修改涉及的文件/模块，匹配相关知识条目
+3. 完整阅读条目中的场景/根因/规则/例外
+4. 将关键约束纳入实现计划
+
+此步骤确保不会重复引入已知问题。如发现新的 bug，在修复前先读对应知识，避免重复踩坑。
 
 #### Step 3 — 规划 (Planning)
 
@@ -211,12 +215,38 @@ CONTEXT: [文件路径/现有模式/约束条件]
 
 review-work 会并行运行 5 个审查 agent（目标验证、代码质量、安全、QA 执行、上下文挖掘），全部通过才算通过。
 
-#### Step 6 — 文档同步
+#### Step 6 — 文档同步（功能变更后 → sync-readme-help）
 
-满足以下**任一**条件时，必须调用 `sync-readme-help`：
-- 新增/删除了 Feature（ToolFeature 枚举变化）
-- 修改了功能的 UI 交互方式或行为
-- Features/ 目录有文件新增或删除
+**触发条件**（满足任意一条即为有变更）：
+- Features/ 目录下有文件被新增、删除或重命名
+- `Models/ToolFeature.swift` 中的枚举 case 有变化
+- 某个功能的界面/行为描述发生了需要记录到文档的变化
+- `README.md` 和 `HelpPanelView.swift` 两者中的功能列表不一致（一方有而另一方没有）
+
+**无变更时**：确认后跳过，输出"功能结构无变化，无需同步"。
+
+**有变更时同步流程**：
+
+1. **同步 README.md**（项目根目录，需更新两处）：
+   - `## 功能一览` 表格 — 增删功能行，格式：`| **功能名** | 一句话说明 |`
+   - `## 详细说明` 各子章节 — 增删对应的 `### N)` 小节，每节包含 bullet point 列表
+
+2. **同步 HelpPanelView.swift**（`Features/HelpPanelView.swift`，需更新一处）：
+   - `helpFeatures` 数组 — 增删对应的 `HelpFeature` 元素
+   - 每个元素包含：`number`（序号）、`name`（功能名称）、`icon`（SF Symbol）、`summary`（概述）、`details`（详细点列表）
+
+3. **验证一致性**：确认两个文件的功能名称和数量完全一致
+
+**对应关系约束**：
+```
+README.md 功能一览表  ←→  helpFeatures[]（数量 + 名称一致）
+README.md 详细说明小节 ←→  helpFeatures[].details（内容一致）
+```
+
+**要点**：
+- 以 README.md 为准，HelpPanelView 跟随 README
+- 不修改 HelpPanelView 的视图布局、样式或非特征数据部分
+- 仅文字润色不需要修改功能列表，只需更新对应位置的描述文本
 
 #### Step 7 — 提交
 
@@ -233,6 +263,14 @@ review-work 会并行运行 5 个审查 agent（目标验证、代码质量、�
 - 安装到 `/Applications`
 - 验证 mtime
 
+#### Step 9 — Bug 沉淀（如果 bug/crash 未解决 ≥ 3 轮 → bug-feedback-tracker）
+
+当用户反馈的 Bug 或 Crash 连续多轮未解决时，调用 `bug-feedback-tracker` skill 自动生成复盘文档，存放在 `bug-reports/` 目录。详细流程（触发条件、文档生成、状态跟踪）见该 skill 的说明。
+
+#### Step 10 — 知识提炼（复盘文档产生后 → bug-knowledge-curator）
+
+复盘文档产生后，调用 `bug-knowledge-curator` skill 将 `bug-reports/` 中的经验提炼为结构化知识条目，追加到 `BUG_KNOWLEDGE.md`。提取标准（场景/根因/规则/例外/来源/置信度）及详细流程见该 skill 的说明。
+
 ### 2.3 Skill 调用决策树
 
 ```
@@ -242,8 +280,6 @@ review-work 会并行运行 5 个审查 agent（目标验证、代码质量、�
 │
 ├─ "自动提交" / "提交代码" → git-auto-commit
 │
-├─ "看提交树" / "看 diff" / "看提交历史" → git-tree-view
-│
 ├─ "清理日志" / "清理临时文件" → clean-logs
 │
 ├─ "同步文档" / "更新帮助" → sync-readme-help
@@ -252,6 +288,8 @@ review-work 会并行运行 5 个审查 agent（目标验证、代码质量、�
 │
 ├─ bug/crash 未解决 ≥ 3 轮 → bug-feedback-tracker
 │
+├─ "前置检查" / "知识检查" → pre-flight-knowledge-check
+│
 ├─ 实现后审查 / QA → review-work（内置 skill）
 │
 ├─ 需要规划 / 跨模块任务 → ulw-plan（内置 skill）
@@ -259,6 +297,8 @@ review-work 会并行运行 5 个审查 agent（目标验证、代码质量、�
 ├─ 清理 AI 代码质量 → remove-ai-slops（内置 skill）
 │
 ├─ 调试复杂问题 → debugging（内置 skill）
+│
+├─ 前端/UI 视觉任务 → visual-engineering（内置 skill）
 ```
 
 ---
@@ -295,18 +335,18 @@ review-work 会并行运行 5 个审查 agent（目标验证、代码质量、�
 
 ## 四、Skills 速查
 
-### 用户安装 (项目专用)
+### 用户安装 (通用 + 项目专用)
 
-| Skill | 路径 | 触发词 | 作用 |
-|-------|------|--------|------|
-| `bug-knowledge-curator` | `~/.config/opencode/skills/bug-knowledge-curator/` | 更新知识库、提炼经验 | 分析 bug-reports → BUG_KNOWLEDGE.md |
-| `bug-feedback-tracker` | `~/.config/opencode/skills/bug-feedback-tracker/` | bug 复盘、crash 追踪 | 未解决 bug ≥3 轮生成复盘文档 |
-| `xcode-build-install` | `~/.config/opencode/skills/xcode-build-install/` | 编译项目 | Release arm64 编译 + /Applications 安装 |
-| `git-auto-commit` | `~/.config/opencode/skills/git-auto-commit/` | 自动提交、继续提交 | 安全提交 + push/pull |
-| `git-tree-view` | `~/.config/opencode/skills/git-tree-view/` | 看提交树、看 diff | 提交图 + 浏览器 diff |
-| `sync-readme-help` | `~/.config/opencode/skills/sync-readme-help/` | 同步文档、更新帮助 | README ↔ HelpPanelView 双向同步 |
-| `clean-logs` | `~/.config/opencode/skills/clean-logs/` | 清理日志、清理临时文件 | 清理 .omo/ /tmp/ 运行时文件 |
-| `agnes-ai-support` | `~/.config/opencode/skills/agnes-ai-support/` | Agnes AI API | API 接入/排查（与本项目无关） |
+| Skill | 路径 | 触发词 | 作用 | 通用性 |
+|-------|------|--------|------|--------|
+| `bug-knowledge-curator` | `~/.config/opencode/skills/bug-knowledge-curator/` | 更新知识库、提炼经验 | 分析复盘文档 → 知识库，路径可配置 | 🟢 通用 |
+| `bug-feedback-tracker` | `~/.config/opencode/skills/bug-feedback-tracker/` | bug 复盘、crash 追踪 | 未解决 bug ≥3 轮生成复盘文档，路径可配置 | 🟢 通用 |
+| `pre-flight-knowledge-check` | `~/.config/opencode/skills/pre-flight-knowledge-check/` | 前置检查、知识检查 | 修改前自动读取知识库文件，避免重复踩坑 | 🟢 通用 |
+| `xcode-build-install` | `~/.config/opencode/skills/xcode-build-install/` | 编译项目 | Release arm64 编译 + /Applications 安装 | 🟢 通用 |
+| `git-auto-commit` | `~/.config/opencode/skills/git-auto-commit/` | 自动提交、继续提交 | 安全提交 + push/pull | 🟢 通用 |
+| `clean-logs` | `~/.config/opencode/skills/clean-logs/` | 清理日志、清理临时文件 | 清理 .omo/ /tmp/ 运行时文件 | 🟢 通用 |
+| `sync-readme-help` | `~/.config/opencode/skills/sync-readme-help/` | 同步文档、更新帮助 | README ↔ HelpPanelView 双向同步（项目专属） | 🔴 项目专属 |
+| `agnes-ai-support` | `~/.config/opencode/skills/agnes-ai-support/` | Agnes AI API | API 接入/排查（与本项目无关） | 🟢 通用 |
 
 ### 内置可用
 

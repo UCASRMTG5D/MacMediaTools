@@ -19,10 +19,8 @@ struct VideoScreenshotExtractorView: View {
     @State private var endTimeString: String = "00:00.000"
 
     // 提取设置
-    @State private var interval: Double = 1.0 {
-        didSet { intervalString = String(format: "%.1f", interval) }
-    }
-    @State private var intervalString: String = "1.0"
+    @State private var interval: Double = 1.0
+    @State private var intervalString: String = "1.000"
     @State private var outputFormat: VideoScreenshotExtractor.ExtractionSettings.OutputFormat = .png
     @State private var enableQualityCheck: Bool = true
     @State private var qualityThreshold: Double = 0.85
@@ -59,6 +57,7 @@ struct VideoScreenshotExtractorView: View {
     @State private var showError = false
     @State private var showSaveSuccess = false
     @State private var saveSuccessPath = ""
+    @State private var showFrameCountWarning = false
 
     // 快捷键支持
     @FocusState private var focusedField: String?
@@ -96,6 +95,14 @@ struct VideoScreenshotExtractorView: View {
         } message: {
             Text("截图已保存到 \(saveSuccessPath)")
         }
+        .alert("截图数量过多", isPresented: $showFrameCountWarning) {
+            Button("忽略，继续执行") {
+                beginExtraction(skipWarning: true)
+            }
+            Button("返回，进行修改", role: .cancel) { }
+        } message: {
+            Text("截图数量为 \(expectedFrameCount)，是否需要增加间隔或缩短区段？")
+        }
         .onDisappear {
             if let playbackEndObserver {
                 NotificationCenter.default.removeObserver(playbackEndObserver)
@@ -116,6 +123,27 @@ struct VideoScreenshotExtractorView: View {
         }
         .onChange(of: endTime) { newValue in
             endTimeString = formatTime(newValue)
+        }
+        .onChange(of: focusedField) { newValue in
+            guard newValue == nil else { return }
+            // 焦点离开任意字段时，同步解析字符串到实际值
+            // 间隔字段
+            if let value = Double(intervalString.replacingOccurrences(of: "s", with: "").trimmingCharacters(in: .whitespaces)) {
+                let clamped = max(0.001, min(60, value))
+                if clamped != interval {
+                    interval = clamped
+                    intervalString = String(format: "%.3f", interval)
+                }
+            }
+            // 开始/结束时间字段
+            if let parsed = parseTimeString(startTimeString) {
+                let clamped = max(0, min(parsed, videoDuration - 0.1))
+                if clamped != startTime { startTime = clamped }
+            }
+            if let parsed = parseTimeString(endTimeString) {
+                let clamped = max(startTime + 0.1, min(parsed, videoDuration))
+                if clamped != endTime { endTime = clamped }
+            }
         }
     }
 
@@ -174,15 +202,20 @@ struct VideoScreenshotExtractorView: View {
                             .fontWeight(.medium)
 
                         HStack(alignment: .center, spacing: 8) {
-                            Slider(value: $interval, in: 0.1...60, step: 0.1)
+                            Slider(value: $interval, in: 0.001...60, step: 0.001)
                                 .frame(maxWidth: .infinity)
+                                .onChange(of: interval) { newValue in
+                                    intervalString = String(format: "%.3f", newValue)
+                                }
                             TextField("秒", text: $intervalString)
                                 .textFieldStyle(.roundedBorder)
-                                .frame(width: 60)
-                                .onChange(of: intervalString) { newValue in
-                                    if let value = Double(newValue.replacingOccurrences(of: "s", with: "").trimmingCharacters(in: .whitespaces)) {
-                                        let clamped = max(0.1, min(60, value))
+                                .frame(width: 80)
+                                .focused($focusedField, equals: "interval")
+                                .onSubmit {
+                                    if let value = Double(intervalString.replacingOccurrences(of: "s", with: "").trimmingCharacters(in: .whitespaces)) {
+                                        let clamped = max(0.001, min(60, value))
                                         interval = clamped
+                                        intervalString = String(format: "%.3f", interval)
                                     }
                                 }
                             Text("秒")
@@ -246,6 +279,10 @@ struct VideoScreenshotExtractorView: View {
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                             .lineLimit(3)
+                    } else {
+                        Text("请先选择导出目录")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -257,15 +294,7 @@ struct VideoScreenshotExtractorView: View {
                         if isProcessing {
                             togglePause()
                         } else {
-                            Task {
-                                guard await WorkManager.shared.requestStart(.keyFrameExtract) else { return }
-                                isProcessing = true
-                                defer {
-                                    isProcessing = false
-                                    WorkManager.shared.finishWork(.keyFrameExtract)
-                                }
-                                await extractScreenshots()
-                            }
+                            beginExtraction()
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -362,7 +391,7 @@ struct VideoScreenshotExtractorView: View {
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 120)
                                 .focused($focusedField, equals: "startTime")
-                                .onChange(of: startTimeString) { parseStartTime($0) }
+                                .onSubmit { parseStartTime(startTimeString) }
                         }
 
                         VStack(alignment: .leading, spacing: 4) {
@@ -373,7 +402,7 @@ struct VideoScreenshotExtractorView: View {
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 120)
                                 .focused($focusedField, equals: "endTime")
-                                .onChange(of: endTimeString) { parseEndTime($0) }
+                                .onSubmit { parseEndTime(endTimeString) }
                         }
 
                         Spacer()
@@ -421,7 +450,7 @@ struct VideoScreenshotExtractorView: View {
                             Text("筛选结果")
                                 .font(.headline)
                             Spacer()
-                            Button("保存到...") {
+                            Button("保存") {
                                 saveCurrentFrames(result: result)
                             }
                             .buttonStyle(.borderedProminent)
@@ -578,9 +607,54 @@ struct VideoScreenshotExtractorView: View {
 
     // MARK: - Screenshot Extraction
 
+    private func beginExtraction(skipWarning: Bool = false) {
+        // 从文本字段同步参数（用户可能未按 Enter 确认）
+        if let parsedStart = parseTimeString(startTimeString) {
+            startTime = max(0, min(parsedStart, videoDuration - 0.1))
+        }
+        if let parsedEnd = parseTimeString(endTimeString) {
+            endTime = max(startTime + 0.1, min(parsedEnd, videoDuration))
+        }
+        if let parsedInterval = Double(intervalString.replacingOccurrences(of: "s", with: "").trimmingCharacters(in: .whitespaces)) {
+            interval = max(0.001, min(60, parsedInterval))
+            intervalString = String(format: "%.3f", interval)
+        }
+
+        let timeRange = endTime - startTime
+        expectedFrameCount = max(1, Int(timeRange / interval) + 1)
+
+        // 截图数量过多时弹窗警告
+        if expectedFrameCount > 500 && !skipWarning {
+            showFrameCountWarning = true
+            return
+        }
+
+        Task {
+            guard await WorkManager.shared.requestStart(.keyFrameExtract) else { return }
+            isProcessing = true
+            defer {
+                isProcessing = false
+                WorkManager.shared.finishWork(.keyFrameExtract)
+            }
+            await extractScreenshots()
+        }
+    }
+
     private func extractScreenshots() async {
         guard let videoURL = videoURL, let outputDirectory = outputDirectory else {
             return
+        }
+
+        // 从文本字段同步参数（用户可能未按 Enter 确认）
+        if let parsedStart = parseTimeString(startTimeString) {
+            startTime = max(0, min(parsedStart, videoDuration - 0.1))
+        }
+        if let parsedEnd = parseTimeString(endTimeString) {
+            endTime = max(startTime + 0.1, min(parsedEnd, videoDuration))
+        }
+        if let parsedInterval = Double(intervalString.replacingOccurrences(of: "s", with: "").trimmingCharacters(in: .whitespaces)) {
+            interval = max(0.001, min(60, parsedInterval))
+            intervalString = String(format: "%.3f", interval)
         }
 
         isProcessing = true
@@ -664,22 +738,13 @@ struct VideoScreenshotExtractorView: View {
     // MARK: - Output Management
 
     private func saveCurrentFrames(result: VideoScreenshotExtractor.ExtractionResult) {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        panel.title = "选择保存目录"
-        panel.message = "保存 \(filterMode.rawValue) (\(displayedFrames.count) 帧)"
-
-        guard panel.runModal() == .OK, let targetDir = panel.url else { return }
-
-        // 在选择的目录下创建子文件夹
-        let folderName = "screenshots_\(currentTimestamp())"
-        let saveDir = targetDir.appendingPathComponent(folderName)
+        let saveDir = result.outputDirectory
 
         Task {
             do {
-                try FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: saveDir.path) {
+                    try FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
+                }
                 let savedURLs = try await VideoScreenshotExtractor.shared.saveFrames(
                     displayedFrames, to: saveDir, format: outputFormat
                 )

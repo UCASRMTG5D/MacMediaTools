@@ -183,7 +183,7 @@
   4. 两者都失败时，打印精确的手动命令，**不自动降级**。
   5. 安装后必须验证 bundle version 和 modify time 匹配。
 - **例外**：无。/Applications 是唯一的合法安装路径。
-- **来源**：bug-report-20260702-151500-xcodebuild-install-wrong-path
+- **来源**：bug-report-20260702-151500-xcodebuild-install-evolution
 - **置信度**：high
 
 ---
@@ -198,7 +198,7 @@
   ```
   或直接指向已知路径：`./build/DerivedData/Build/Products/Release`。
 - **例外**：无。任何时候使用 `BUILT_APP_DIR`，必须先显式赋值。
-- **来源**：bug-report-20260702-151500-xcodebuild-install-wrong-path
+- **来源**：bug-report-20260702-151500-xcodebuild-install-evolution
 - **置信度**：high
 
 ---
@@ -213,7 +213,7 @@
   ```
   一次提权，完成所有操作。
 - **例外**：各操作必须独立授权时（场景极少），可以分开调用。
-- **来源**：bug-report-20260702-151500-xcodebuild-install-wrong-path
+- **来源**：bug-report-20260702-151500-xcodebuild-install-evolution
 - **置信度**：high
 
 ---
@@ -227,7 +227,7 @@
   2. 比较 `mtime`（`stat -f %m` 比较 built 和 installed 的修改时间）
   3. `built >= installed` 为通过，否则报错提示重新安装。
 - **例外**：非 app bundle 类型的文件安装（如 dylib、脚本、配置文件）不需要此验证。
-- **来源**：bug-report-20260702-151500-xcodebuild-install-wrong-path
+- **来源**：bug-report-20260702-151500-xcodebuild-install-evolution
 - **置信度**：high
 
 ---

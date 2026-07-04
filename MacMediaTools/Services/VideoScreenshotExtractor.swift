@@ -141,8 +141,8 @@ actor VideoScreenshotExtractor {
         if settings.startTime >= settings.endTime {
             return "开始时间必须小于结束时间"
         }
-        if settings.interval < 0.1 || settings.interval > 60 {
-            return "时间间隔必须在0.1秒至60秒之间"
+        if settings.interval < 0.001 || settings.interval > 60 {
+            return "时间间隔必须在0.001秒至60秒之间"
         }
 		if settings.qualityThreshold < 0 || settings.qualityThreshold > 1 {
 			return "质量阈值必须在0到1之间"

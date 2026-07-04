@@ -35,9 +35,21 @@ func parseTimeString(_ string: String) -> Double? {
     let components = string.components(separatedBy: CharacterSet(charactersIn: ":."))
     let numbers = components.compactMap { Double($0) }
     switch numbers.count {
-    case 4: return numbers[0] * 3600 + numbers[1] * 60 + numbers[2] + numbers[3] / 1000
-    case 3: return numbers[0] * 60 + numbers[1] + numbers[2] / 1000
-    case 2: return numbers[0] + numbers[1] / 1000
+    case 4:
+        let h = min(Int(numbers[0]), 99)
+        let m = min(Int(numbers[1]), 59)
+        let s = min(Int(numbers[2]), 59)
+        let ms = min(Int(numbers[3]), 999)
+        return Double(h * 3600 + m * 60 + s) + Double(ms) / 1000
+    case 3:
+        let m = min(Int(numbers[0]), 99)
+        let s = min(Int(numbers[1]), 59)
+        let ms = min(Int(numbers[2]), 999)
+        return Double(m * 60 + s) + Double(ms) / 1000
+    case 2:
+        let s = min(Int(numbers[0]), 99)
+        let ms = min(Int(numbers[1]), 999)
+        return Double(s) + Double(ms) / 1000
     default: return nil
     }
 }
