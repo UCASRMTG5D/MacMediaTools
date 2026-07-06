@@ -3,7 +3,7 @@
 > 从 bug-reports/ 复盘文档中提炼的可复用经验。
 > AI 在写代码前应读取此文件，避免重复踩坑。
 > 每条经验都标注了精确场景、限制条件和置信度。
-> 更新于: 2026-07-02 22:18
+> 更新于: 2026-07-06 09:00
 
 ---
 
@@ -241,4 +241,28 @@
 - **规则**：在写入前必须检查文件是否已存在（`FileManager.default.fileExists(atPath:)`），或使用 `Data.write(to:options:.withoutOverwriting)` 让系统在冲突时抛错。更推荐：确保文件名**全局唯一**（如使用原始数据标识而非处理后结果）。
 - **例外**：明确预期是覆盖写入的场景（如缓存更新、临时文件刷新、日志轮转）不需要此检查。
 - **来源**：bug-report-20260702-184520-screenshot-count-mismatch
+- **置信度**：high
+
+---
+
+### CGContext bitmapInfo：禁止直接使用源图片像素格式
+
+- **场景**：`CGImage` 缩放/重绘时通过 `CGContext` 绘制，使用源图片的 `bitmapInfo` 和 `bitsPerComponent` 创建上下文。适用于所有 `scaleCGImageStatic` 及类似的图片处理代码。
+- **根因**：`CGContext(data:width:height:bitsPerComponent:bytesPerRow:space:bitmapInfo:)` 只支持有限的像素格式组合。JPEG 图片的 `alphaInfo` 为 `.none`（=0），在 RGB 色彩空间下不被支持；非预乘 Alpha（`.last`/`.first`）和浮点分量（`.floatComponents`）同样不被支持。直接使用 `image.bitmapInfo` 会导致 `CGContext` 创建失败返回 nil，抛"缩放失败"。
+- **规则**：创建 CGContext 时必须使用**已知兼容的标准像素格式**，不能直接使用源图片的 bitmapInfo。推荐固定使用 8bpc sRGB premultipliedLast（`CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Host.rawValue`），CoreGraphics 在 `ctx.draw()` 时会自动转换源图格式。
+- **例外**：若确定源图来自固定设备（如同一台摄像机的 8bpc 视频帧），可以直接使用源图 bitmapInfo。
+- **标签**：`media-processing` `coregraphics` `nil-safety`
+- **来源**：bug-report-20260706-image-crop-resize-bugs
+- **置信度**：high
+
+---
+
+### Image.aspectRatio 在 ZStack 中的布局需要显式填满容器
+
+- **场景**：在 `ZStack` 中使用 `Image.resizable().aspectRatio(contentMode: .fit)` 与绝对定位（`.position()`）的元素叠加时。适用于所有裁剪框叠加图片的场景。
+- **根因**：`.aspectRatio(contentMode: .fit)` 会约束 Image 视图的实际尺寸为**适配容器后的 fitted 尺寸**，而非填满容器。配合 `ZStack(alignment: .topLeading)` 时，Image 视图被放置于左上角，而绝对定位的叠加元素（如裁剪框）位于容器中心，两者错位。
+- **规则**：在使用 `.aspectRatio()` 约束的 Image 上必须加 `.frame(maxWidth: .infinity, maxHeight: .infinity)` 强制视图填满容器，或改用 `.aspectRatio(contentMode: .fill)` 配合 `.clipped()`。
+- **例外**：`VideoPlayer` 没有 `.aspectRatio()` 约束，默认填满容器，不受此问题影响。
+- **标签**：`ui` `swiftui`
+- **来源**：bug-report-20260706-image-crop-resize-bugs
 - **置信度**：high

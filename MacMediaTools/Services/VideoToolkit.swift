@@ -349,6 +349,20 @@ enum VideoToolkit {
 		guard let source = CGImageSourceCreateWithURL(inputURL as CFURL, nil) else {
 			throw VideoToolkitError.exportFailed("无法读取图片文件")
 		}
+
+		let frameCount = CGImageSourceGetCount(source)
+		if frameCount > 1 {
+			try exportAnimatedGifCroppedAndResized(
+				source: source,
+				frameCount: frameCount,
+				outputURL: outputURL,
+				cropRect: cropRect,
+				targetSize: targetSize,
+				scaleMode: scaleMode
+			)
+			return
+		}
+
 		guard let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
 			throw VideoToolkitError.exportFailed("无法解码图片")
 		}
@@ -389,6 +403,99 @@ enum VideoToolkit {
 		}
 	}
 
+	private static func exportAnimatedGifCroppedAndResized(
+		source: CGImageSource,
+		frameCount: Int,
+		outputURL: URL,
+		cropRect: CGRect?,
+		targetSize: CGSize?,
+		scaleMode: VideoScaleMode
+	) throws {
+		guard let firstImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+			throw VideoToolkitError.exportFailed("无法解码 GIF 第一帧")
+		}
+
+		let imageSize = CGSize(width: firstImage.width, height: firstImage.height)
+		let crop = cropRect ?? CGRect(origin: .zero, size: imageSize)
+		let renderSize = targetSize ?? crop.size
+		guard crop.width > 2, crop.height > 2, renderSize.width > 2, renderSize.height > 2 else {
+			throw VideoToolkitError.exportFailed("裁剪区域或目标尺寸太小")
+		}
+
+		var frameDelays: [Double] = []
+		var processedFrames: [CGImage] = []
+		frameDelays.reserveCapacity(frameCount)
+		processedFrames.reserveCapacity(frameCount)
+
+		for i in 0..<frameCount {
+			guard let frame = CGImageSourceCreateImageAtIndex(source, i, nil) else {
+				throw VideoToolkitError.exportFailed("无法解码 GIF 第 \(i + 1) 帧")
+			}
+
+			let cropped: CGImage
+			if let cropRect, cropRect != CGRect(origin: .zero, size: imageSize) {
+				guard let c = frame.cropping(to: crop) else {
+					throw VideoToolkitError.exportFailed("GIF 第 \(i + 1) 帧裁剪失败")
+				}
+				cropped = c
+			} else {
+				cropped = frame
+			}
+
+			let processed: CGImage
+			if let target = targetSize {
+				guard let resized = scaleCGImageStatic(cropped, to: target, scaleMode: scaleMode) else {
+					throw VideoToolkitError.exportFailed("GIF 第 \(i + 1) 帧缩放失败")
+				}
+				processed = resized
+			} else {
+				processed = cropped
+			}
+
+			processedFrames.append(processed)
+
+			let rawDelay: Double
+			if let props = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [String: Any],
+			   let gifDict = props[kCGImagePropertyGIFDictionary as String] as? [String: Any] {
+				rawDelay = gifDict[kCGImagePropertyGIFUnclampedDelayTime as String] as? Double
+					?? gifDict[kCGImagePropertyGIFDelayTime as String] as? Double
+					?? 0.1
+			} else {
+				rawDelay = 0.1
+			}
+			frameDelays.append(max(rawDelay, 0.02))
+		}
+
+		guard let dest = CGImageDestinationCreateWithURL(
+			outputURL as CFURL,
+			UTType.gif.identifier as CFString,
+			frameCount,
+			nil
+		) else {
+			throw VideoToolkitError.exportFailed("无法创建 GIF 输出文件")
+		}
+
+		let gifProperties: NSDictionary = [
+			kCGImagePropertyGIFDictionary: [
+				kCGImagePropertyGIFLoopCount: 0
+			]
+		]
+		CGImageDestinationSetProperties(dest, gifProperties)
+
+		for i in 0..<processedFrames.count {
+			let frameProperties: NSDictionary = [
+				kCGImagePropertyGIFDictionary: [
+					kCGImagePropertyGIFUnclampedDelayTime: frameDelays[i]
+				]
+			]
+			CGImageDestinationAddImage(dest, processedFrames[i], frameProperties)
+		}
+
+		guard CGImageDestinationFinalize(dest) else {
+			throw VideoToolkitError.exportFailed("写入动画 GIF 失败")
+		}
+	}
+
 	private static func outputUTI(for url: URL) -> CFString {
 		switch url.pathExtension.lowercased() {
 		case "jpg", "jpeg": return UTType.jpeg.identifier as CFString
@@ -421,15 +528,19 @@ enum VideoToolkit {
 			)
 		}
 
-		let cs = image.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
-		let bpc = image.bitsPerComponent
-		let bitmapInfo = image.bitmapInfo
+		// 使用标准 8bpc sRGB premultipliedLast — 源图格式不一定受 CGContext 支持
+		//（如 JPEG alphaInfo=.none、非预乘 alpha、float components）
+		// CoreGraphics 在 ctx.draw() 时会自动转换
+		let cs = CGColorSpace(name: CGColorSpace.sRGB)!
+		let bitmapInfo = CGBitmapInfo(
+			rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+		)
 
 		guard let ctx = CGContext(
 			data: nil,
 			width: Int(targetSize.width),
 			height: Int(targetSize.height),
-			bitsPerComponent: bpc,
+			bitsPerComponent: 8,
 			bytesPerRow: 0,
 			space: cs,
 			bitmapInfo: bitmapInfo.rawValue

@@ -186,8 +186,14 @@ struct VideoCropResizeView: View {
 					displaySize = info.displaySize
 					infoText = "原始宽高：\(Int(info.displaySize.width)) × \(Int(info.displaySize.height))"
 				} else {
-					guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-						  let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+					guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+						throw VideoToolkitError.exportFailed("无法读取图片")
+					}
+					let opts: [CFString: Any] = [
+						kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+						kCGImageSourceCreateThumbnailWithTransform: true
+					]
+					guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, opts as CFDictionary) else {
 						throw VideoToolkitError.exportFailed("无法读取图片")
 					}
 					let sz = CGSize(width: image.width, height: image.height)
@@ -230,14 +236,26 @@ struct VideoCropResizeView: View {
 	}
 
 	private func loadCGImage(from url: URL) {
-		guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-			  let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return }
+		guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return }
+		// 使用 thumbnail 路径并启用 EXIF 旋转，确保预览图正确旋转
+		let options: [CFString: Any] = [
+			kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+			kCGImageSourceCreateThumbnailWithTransform: true
+		]
+		guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return }
 		cachedCGImage = image
 	}
 
 	private func defaultOutputName(for input: URL) -> String {
 		let base = input.deletingPathExtension().lastPathComponent
-		let ext = isVideo ? "mp4" : "png"
+		let ext: String
+		if isVideo {
+			ext = "mp4"
+		} else if input.pathExtension.lowercased() == "gif" {
+			ext = "gif"
+		} else {
+			ext = "png"
+		}
 		if enableCrop && enableResize { return "\(base)_crop_resize.\(ext)" }
 		if enableCrop { return "\(base)_crop.\(ext)" }
 		if enableResize { return "\(base)_resized.\(ext)" }

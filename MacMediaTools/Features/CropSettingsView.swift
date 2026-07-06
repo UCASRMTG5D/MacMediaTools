@@ -102,7 +102,8 @@ struct CropSettingsView: View {
 					let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
 					Image(nsImage: nsImage)
 						.resizable()
-						.aspectRatio(contentMode: .fit)
+						.frame(width: fitted.width, height: fitted.height)
+						.position(x: origin.x + fitted.width / 2, y: origin.y + fitted.height / 2)
 				}
 
 				CropOverlay(normalizedRect: $normalizedRect)
