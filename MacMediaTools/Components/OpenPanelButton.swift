@@ -38,6 +38,7 @@ struct OpenPanelButton: View {
 					UTType.jpeg,
 					UTType.png,
 					UTType.heic,
+					UTType.gif,
 					UTType("public.mpeg-4"),
 					UTType("com.apple.quicktime-movie")
 				].compactMap { $0 }

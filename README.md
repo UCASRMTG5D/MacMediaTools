@@ -15,6 +15,7 @@
 | **重复照片检测** | 递归扫描，SHA256 内容哈希精确匹配 |
 | **重复视频检测** | 按时长 / 大小 / 分辨率分组匹配 |
 | **文件复制工具** | 智能复制媒体文件，自动检测重复并重命名 |
+| **画幅拼接** | 多媒体空间拼接：图片/视频/GIF 混拼，自由拖拽定位、8锚点缩放、单轴拉伸、裁切、逐轨混音 |
 
 ## 环境要求
 
@@ -104,6 +105,17 @@ xed .  # 或从 Xcode 打开 MacMediaTools.xcodeproj
 - 视频通过时长 + 分辨率比对判定重复
 - 重复文件自动生成带编号的文件名
 
+### 8) 画幅拼接
+
+将多个图片、视频、GIF 自由拼接到一个画布上（空间维度），支持自由拖拽定位、缩放、裁切与混音导出。
+
+- **支持混拼**：图片 / 视频 / GIF 混合拼接在同一画布
+- **自由拖拽**：从媒体列表拖入画布，自由摆放位置
+- **8 锚点缩放**：四角手柄等比缩放，四边手柄单轴拉伸
+- **裁切框叠加**：每个元素可独立裁切有效显示区域
+- **逐轨混音**：每个媒体独立调节音量（如有音轨），成品混音导出
+- **导出格式**：MP4 (H.264 + AAC)
+
 ## 项目结构
 
 ```
@@ -112,10 +124,13 @@ MacMediaTools/
 ├── RootView.swift                 # 侧边栏导航
 ├── MediaToolsUtilities.swift      # 公共工具函数
 ├── Models/
-│   └── ToolFeature.swift          # 功能枚举
+│   ├── ToolFeature.swift          # 功能枚举
+│   └── CanvasElement.swift        # 画布元素模型
 ├── Components/
 │   ├── OpenPanelButton.swift      # 文件选择控件
-│   └── VideoProgressSlider.swift  # 视频进度 / 范围选择滑块
+│   ├── VideoProgressSlider.swift  # 视频进度 / 范围选择滑块
+│   ├── CanvasElementView.swift    # 画布元素渲染组件
+│   └── CanvasResizeHandles.swift  # 8锚点缩放手柄组件
 ├── Services/
 │   ├── VideoToolkit.swift         # 视频裁剪 / 调整 / 拼接
 │   ├── AudioVideoToolkit.swift    # 音视频合成 / 分离
@@ -124,6 +139,7 @@ MacMediaTools/
 │   ├── DuplicateVideoScanModel.swift # 重复视频扫描引擎
 │   ├── VideoHashCache.swift       # 视频哈希缓存
 │   ├── SimilarVideoClusterer.swift # dHash 内容指纹聚类
+│   ├── SpatialCanvasService.swift # 画幅拼接合成导出
 │   ├── WorkManager.swift          # 工作队列管理
 │   ├── OperationLogManager.swift  # 操作日志管理
 │   └── VideoScreenshotExtractor.swift # 批量截图引擎
@@ -133,12 +149,13 @@ MacMediaTools/
 │   └── VideoComparisonPanel.swift # 视频并排对比播放器
 └── Features/
     ├── VideoCropResizeView.swift  # 宽高调整（图片+视频裁剪/调整）
-    ├── VideoConcatView.swift      # 视频拼接
+    ├── VideoConcatView.swift      # 视频片段整合
     ├── AudioVideoEditorView.swift # 音视频编辑器
     ├── VideoScreenshotExtractorView.swift # 批量截图界面
     ├── DuplicatePhotoView.swift   # 重复照片检测
     ├── DuplicateVideoView.swift   # 重复视频检测（快速+精细模式）
     ├── FileCopyView.swift         # 文件复制工具
+    ├── SpatialCanvasView.swift    # 画幅拼接主视图
     └── HelpPanelView.swift        # 帮助说明
 ```
 

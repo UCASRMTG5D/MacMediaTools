@@ -11,3 +11,8 @@ build/
 .opencode/
 .omo/run-continuation/
 bug-reports/
+周报/
+
+# 自动生成的开发文档
+PROJECT_INTRODUCTION.md
+oh-my-openagent-*.md

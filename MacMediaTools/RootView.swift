@@ -32,6 +32,8 @@ struct RootView: View {
 					DuplicateVideoView(scanModel: duplicateVideoScan)
 				case .fileCopy:
 					FileCopyView()
+				case .spatialCanvas:
+					SpatialCanvasView()
 				case nil:
 					WelcomeDefaultView()
 				}

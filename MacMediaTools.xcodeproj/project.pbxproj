@@ -50,6 +50,11 @@
 		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
 		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
 		EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8084873CD47F896F183A5556 /* AudioTimelineView.swift */; };
+		AA0000000000000000000133 /* CanvasElement.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000226 /* CanvasElement.swift */; };
+		AA0000000000000000000134 /* CanvasElementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000227 /* CanvasElementView.swift */; };
+		AA0000000000000000000135 /* CanvasResizeHandles.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000228 /* CanvasResizeHandles.swift */; };
+		AA0000000000000000000136 /* SpatialCanvasService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000229 /* SpatialCanvasService.swift */; };
+		AA0000000000000000000137 /* SpatialCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000230 /* SpatialCanvasView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -98,6 +103,11 @@
 		AA0000000000000000000404 /* CryptoKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CryptoKit.framework; path = System/Library/Frameworks/CryptoKit.framework; sourceTree = SDKROOT; };
 		AA0000000000000000000405 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
 		F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HelpPanelView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000226 /* CanvasElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasElement.swift; sourceTree = "<group>"; };
+		AA0000000000000000000227 /* CanvasElementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasElementView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000228 /* CanvasResizeHandles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasResizeHandles.swift; sourceTree = "<group>"; };
+		AA0000000000000000000229 /* SpatialCanvasService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialCanvasService.swift; sourceTree = "<group>"; };
+		AA0000000000000000000230 /* SpatialCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialCanvasView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -166,6 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000203 /* ToolFeature.swift */,
+				AA0000000000000000000226 /* CanvasElement.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -176,6 +187,8 @@
 				AA0000000000000000000204 /* OpenPanelButton.swift */,
 				AA0000000000000000000218 /* VideoProgressSlider.swift */,
 				AA0000000000000000000222 /* VideoComparisonPanel.swift */,
+				AA0000000000000000000227 /* CanvasElementView.swift */,
+				AA0000000000000000000228 /* CanvasResizeHandles.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -193,6 +206,7 @@
 				AA0000000000000000000221 /* SimilarVideoClusterer.swift */,
 				AA0000000000000000000223 /* WorkManager.swift */,
 				AA0000000000000000000224 /* DuplicateVideoScanModel.swift */,
+				AA0000000000000000000229 /* SpatialCanvasService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -219,6 +233,7 @@
 				9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */,
 				02BEB260C3573273D9070860 /* ResizeSettingsView.swift */,
 				F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */,
+				AA0000000000000000000230 /* SpatialCanvasView.swift */,
 			);
 			path = MacMediaTools/Features;
 			sourceTree = SOURCE_ROOT;
@@ -328,6 +343,11 @@
 				95773F51BD1B05D1D1ACBD45 /* FrameThumbnail.swift in Sources */,
 				98737A7B28561321202875D4 /* ResizeSettingsView.swift in Sources */,
 				AA0000000000000000000132 /* WelcomeDefaultView.swift in Sources */,
+				AA0000000000000000000133 /* CanvasElement.swift in Sources */,
+				AA0000000000000000000134 /* CanvasElementView.swift in Sources */,
+				AA0000000000000000000135 /* CanvasResizeHandles.swift in Sources */,
+				AA0000000000000000000136 /* SpatialCanvasService.swift in Sources */,
+				AA0000000000000000000137 /* SpatialCanvasView.swift in Sources */,
 				717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

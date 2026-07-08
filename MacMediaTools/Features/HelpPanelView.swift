@@ -99,6 +99,20 @@ private let helpFeatures: [HelpFeature] = [
 			"重复文件自动生成带编号的文件名",
 		]
 	),
+	HelpFeature(
+		number: "8",
+		name: "画幅拼接",
+		icon: "square.grid.3x3.fill",
+		summary: "将多个图片、视频、GIF 自由拼接到一个画布上，支持拖拽定位、缩放、裁切、混音。",
+		details: [
+			"支持图片 / 视频 / GIF 混拼，多个媒体元素组合到同一画布",
+			"从媒体列表拖拽到画布，自由定位摆放",
+			"8 个锚点缩放手柄：四角等比缩放 + 四边单轴拉伸",
+			"裁切框叠加，精确裁切每个元素的有效显示区域",
+			"每个媒体可独立调节音量（如有音轨），成品混音导出",
+			"导出为 MP4 (H.264) 视频文件",
+		]
+	),
 ]
 
 // MARK: - Environment / Build Info
