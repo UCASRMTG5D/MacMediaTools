@@ -12,6 +12,7 @@ final class CanvasStore: ObservableObject {
 	@Published var selectedElementID: UUID?
 	@Published var canvasScale: CGFloat = 1.0
 	@Published var canvasOffset: CGSize = .zero
+	@Published var canvasDragState: CGSize = .zero
 	@Published var settings = CanvasSettings()
 	@Published var outputFolder: URL?
 	@Published var outputFileName: String = "canvas_composition.mp4"
@@ -235,80 +236,107 @@ struct SpatialCanvasView: View {
 	// MARK: - Canvas Section
 
 	private var canvasSection: some View {
-		VStack(alignment: .leading, spacing: 6) {
-			HStack {
+		let scaledW = canvasDisplaySize.width * store.canvasScale
+		let scaledH = canvasDisplaySize.height * store.canvasScale
+
+		return VStack(alignment: .leading, spacing: 6) {
+			// 画布信息 + 缩放控件
+			HStack(spacing: 8) {
 				Label("画布", systemImage: "square.grid.3x3")
 					.font(.headline)
 				Spacer()
 				Text("\(Int(store.settings.canvasSize.width)) × \(Int(store.settings.canvasSize.height)) px")
 					.font(.caption)
 					.foregroundStyle(.secondary)
-				Button("适应画布") { resetCanvasView() }
+
+				// 缩放控件
+				Button(action: { store.canvasScale = max(0.1, store.canvasScale - 0.1) }) {
+					Image(systemName: "minus.magnifyingglass")
+				}
+				.buttonStyle(.borderless)
+				.help("缩小")
+
+				Text("\(Int(store.canvasScale * 100))%")
+					.font(.caption.monospacedDigit())
+					.frame(width: 40, alignment: .center)
+
+				Slider(value: $store.canvasScale, in: 0.1...5.0, step: 0.05)
+					.frame(width: 100)
+					.help("缩放比例")
+
+				Button(action: { store.canvasScale = min(5.0, store.canvasScale + 0.1) }) {
+					Image(systemName: "plus.magnifyingglass")
+				}
+				.buttonStyle(.borderless)
+				.help("放大")
+
+				Button("适应画布") { fitCanvasToViewport() }
 					.buttonStyle(.borderless)
 					.font(.caption)
 			}
 
-			// 画布 ZStack
-			ZStack {
-				// 背景
-				Rectangle()
-					.fill(Color.black)
-					.frame(width: canvasDisplaySize.width, height: canvasDisplaySize.height)
+			// 画布预览区（ScrollView 支持缩放后滚动查看）
+			ScrollView([.horizontal, .vertical], showsIndicators: true) {
+				ZStack {
+					Rectangle()
+						.fill(Color.black)
+						.frame(width: scaledW, height: scaledH)
 
-				// 元素层
-				ForEach(store.elements) { element in
-					CanvasElementView(
-						element: element,
-						isSelected: element.id == store.selectedElementID
-					)
-					.onTapGesture {
-						store.selectedElementID = element.id
-					}
-					.gesture(editMode == .move ? dragGesture(for: element) : nil)
-				}
-
-				// 选中元素的手柄层
-				if let el = store.selectedElement,
-				   let index = store.elements.firstIndex(where: { $0.id == el.id }),
-				   editMode == .resize {
-					CanvasResizeHandles(
-						element: Binding<CanvasElement>(
-							get: { store.elements[index] },
-							set: { store.elements[index] = $0 }
+					ForEach(store.elements) { element in
+						CanvasElementView(
+							element: element,
+							isSelected: element.id == store.selectedElementID
 						)
-					)
-				}
+						.onTapGesture {
+							store.selectedElementID = element.id
+						}
+						.gesture(editMode == .move ? dragGesture(for: element) : nil)
+					}
 
-				Color.clear
-					.contentShape(Rectangle())
-					.highPriorityGesture(
-						MagnificationGesture()
-							.onChanged { value in
-								let newScale = max(0.3, min(3.0, store.canvasScale * value))
-								store.canvasScale = newScale
-							}
-					)
+					if let el = store.selectedElement,
+					   let index = store.elements.firstIndex(where: { $0.id == el.id }),
+					   editMode == .resize {
+						CanvasResizeHandles(
+							element: Binding<CanvasElement>(
+								get: { store.elements[index] },
+								set: { store.elements[index] = $0 }
+							)
+						)
+					}
+
+					Color.clear
+						.contentShape(Rectangle())
+						.frame(width: scaledW, height: scaledH)
+						.highPriorityGesture(
+							MagnificationGesture()
+								.onChanged { value in
+									let newScale = max(0.1, min(5.0, store.canvasScale * value))
+									store.canvasScale = newScale
+								}
+						)
+				}
+				.frame(width: scaledW, height: scaledH)
+				.coordinateSpace(name: "canvas")
+				.offset(store.canvasOffset)
+				.gesture(
+					DragGesture()
+						.onChanged { value in
+							store.canvasOffset = CGSize(
+								width: store.canvasDragState.width + value.translation.width,
+								height: store.canvasDragState.height + value.translation.height
+							)
+						}
+						.onEnded { _ in
+							store.canvasDragState = store.canvasOffset
+						}
+				)
 			}
-			.coordinateSpace(name: "canvas")
 			.clipShape(RoundedRectangle(cornerRadius: 4))
 			.overlay(
 				RoundedRectangle(cornerRadius: 4)
 					.stroke(Color.secondary.opacity(0.3))
 			)
-			.scaleEffect(store.canvasScale)
-			.offset(store.canvasOffset)
-			.gesture(
-				DragGesture()
-					.onChanged { value in
-						store.canvasOffset = value.translation
-					}
-					.onEnded { value in
-						store.canvasOffset = value.translation
-					}
-			)
-			.frame(width: min(canvasDisplaySize.width * store.canvasScale, 800),
-				   height: min(canvasDisplaySize.height * store.canvasScale, 500))
-			.clipped()
+			.frame(maxWidth: .infinity, minHeight: 300, maxHeight: 500)
 			.background(Color(NSColor.textBackgroundColor).opacity(0.05))
 		}
 	}
@@ -323,9 +351,12 @@ struct SpatialCanvasView: View {
 		return cs
 	}
 
-	private func resetCanvasView() {
-		store.canvasScale = 1.0
+	private func fitCanvasToViewport() {
+		let availableWidth: CGFloat = 700
+		let fitScale = availableWidth / canvasDisplaySize.width
+		store.canvasScale = max(0.1, min(5.0, fitScale))
 		store.canvasOffset = .zero
+		store.canvasDragState = .zero
 	}
 
 	// MARK: - Drag Gesture
