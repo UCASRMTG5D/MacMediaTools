@@ -11,8 +11,6 @@ final class CanvasStore: ObservableObject {
 	@Published var elements: [CanvasElement] = []
 	@Published var selectedElementID: UUID?
 	@Published var canvasScale: CGFloat = 1.0
-	@Published var canvasOffset: CGSize = .zero
-	@Published var canvasDragState: CGSize = .zero
 	@Published var settings = CanvasSettings()
 	@Published var outputFolder: URL?
 	@Published var outputFileName: String = "canvas_composition.mp4"
@@ -109,7 +107,6 @@ final class CanvasStore: ObservableObject {
 		elements.removeAll()
 		selectedElementID = nil
 		canvasScale = 1.0
-		canvasOffset = .zero
 		lastOutputURL = nil
 		errorMessage = nil
 	}
@@ -304,33 +301,17 @@ struct SpatialCanvasView: View {
 						)
 					}
 
-					Color.clear
-						.contentShape(Rectangle())
-						.frame(width: scaledW, height: scaledH)
-						.highPriorityGesture(
-							MagnificationGesture()
-								.onChanged { value in
-									let newScale = max(0.1, min(5.0, store.canvasScale * value))
-									store.canvasScale = newScale
-								}
-						)
-				}
+					}
 				.frame(width: scaledW, height: scaledH)
 				.coordinateSpace(name: "canvas")
-				.offset(store.canvasOffset)
-				.gesture(
-					DragGesture()
-						.onChanged { value in
-							store.canvasOffset = CGSize(
-								width: store.canvasDragState.width + value.translation.width,
-								height: store.canvasDragState.height + value.translation.height
-							)
-						}
-						.onEnded { _ in
-							store.canvasDragState = store.canvasOffset
-						}
-				)
 			}
+			.highPriorityGesture(
+				MagnificationGesture()
+					.onChanged { value in
+						let newScale = max(0.1, min(5.0, store.canvasScale * value))
+						store.canvasScale = newScale
+					}
+			)
 			.clipShape(RoundedRectangle(cornerRadius: 4))
 			.overlay(
 				RoundedRectangle(cornerRadius: 4)
@@ -342,21 +323,13 @@ struct SpatialCanvasView: View {
 	}
 
 	private var canvasDisplaySize: CGSize {
-		let maxDisplay: CGFloat = 760
-		let cs = store.settings.canvasSize
-		if cs.width > maxDisplay {
-			let ratio = maxDisplay / cs.width
-			return CGSize(width: maxDisplay, height: cs.height * ratio)
-		}
-		return cs
+		store.settings.canvasSize
 	}
 
 	private func fitCanvasToViewport() {
 		let availableWidth: CGFloat = 700
 		let fitScale = availableWidth / canvasDisplaySize.width
 		store.canvasScale = max(0.1, min(5.0, fitScale))
-		store.canvasOffset = .zero
-		store.canvasDragState = .zero
 	}
 
 	// MARK: - Drag Gesture
