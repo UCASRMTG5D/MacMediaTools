@@ -11,9 +11,14 @@ import UniformTypeIdentifiers
 struct CanvasElementView: View {
 	let element: CanvasElement
 	let isSelected: Bool
+	let canvasScale: CGFloat
 
 	var body: some View {
-		ZStack {
+		let scaledSize = CGSize(
+			width: element.effectiveSize.width * canvasScale,
+			height: element.effectiveSize.height * canvasScale
+		)
+		return ZStack {
 			// 媒体内容层
 			Group {
 				switch element.mediaType {
@@ -40,10 +45,10 @@ struct CanvasElementView: View {
 					.allowsHitTesting(false)
 			}
 		}
-		.frame(width: element.effectiveSize.width, height: element.effectiveSize.height)
+		.frame(width: scaledSize.width, height: scaledSize.height)
 		.position(
-			x: element.position.x + element.effectiveSize.width / 2,
-			y: element.position.y + element.effectiveSize.height / 2
+			x: element.position.x * canvasScale + scaledSize.width / 2,
+			y: element.position.y * canvasScale + scaledSize.height / 2
 		)
 		.coordinateSpace(name: "canvas")
 		.allowsHitTesting(true)

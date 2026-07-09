@@ -3,7 +3,7 @@
 > 从 bug-reports/ 复盘文档中提炼的可复用经验。
 > AI 在写代码前应读取此文件，避免重复踩坑。
 > 每条经验都标注了精确场景、限制条件和置信度。
-> 更新于: 2026-07-06 09:00
+> 更新于: 2026-07-09 18:00
 
 ---
 
@@ -265,4 +265,44 @@
 - **例外**：`VideoPlayer` 没有 `.aspectRatio()` 约束，默认填满容器，不受此问题影响。
 - **标签**：`ui` `swiftui`
 - **来源**：bug-report-20260706-image-crop-resize-bugs
+- **置信度**：high
+
+---
+
+### ScrollView 内禁止使用 .offset() 做手动拖动：offset 会推出可视区
+
+- **场景**：在 `ScrollView` 内部对子视图使用 `.offset()` + `DragGesture` 实现手动拖动/平移。适用于所有需要在 ScrollView 内移动内容的场景。
+- **根因**：`.offset()` 改变的是视图的渲染位移，不影响 ScrollView 的 contentOffset。ScrollView 的可视区起点始终从 (0,0) 开始显示内容，不受子视图 `.offset()` 影响。如果 offset 推到负值，内容被推到 ScrollView 可视区之外，用户看不到。DragGesture 改动的偏移值与 ScrollView 的滚动机制是两套独立的坐标系统，不会自动同步。
+- **规则**：ScrollView 内**永远不要**用 `.offset()` + `DragGesture` 做手动拖动。ScrollView 本身就支持 trackpad/鼠标滚轮翻阅内容——这是它的核心职责。超大内容直接放进 ScrollView，由 ScrollView 的滚动机制处理浏览。
+- **例外**：如需微调元素位置（非拖动整个画布），且 offset 范围在可视区内（如元素对齐微调），可以使用 `.offset()`。但不要与 ScrollView 的滚动功能竞争。
+- **标签**：`ui` `swiftui` `布局约束`
+- **来源**：bug-report-20260709-spatialcanvas-zoom-bugs
+- **置信度**：high
+
+---
+
+### 嵌套 ScrollView 手势冲突：内层可能被外层拦截
+
+- **场景**：在 SwiftUI 布局中存在两层或以上的 ScrollView（如外层包裹整页内容，内层包裹画布/列表）。适用于所有嵌套 ScrollView 的 SwiftUI 布局。
+- **根因**：SwiftUI 默认将滚动手势路由给最外层的 ScrollView。当用户在内层 ScrollView 区域滚动时，手势可能被外层捕获，导致内层 ScrollView 不可滚动或跳动。
+- **规则**：
+  1. 尽量避免嵌套 ScrollView。优先使用单层 ScrollView 处理所有滚动需求。
+  2. 如必须嵌套（例如外层满足模板要求，内层处理独立滚动区），给内层 ScrollView 设置严格 frame 约束（`.frame(maxWidth: .infinity, minHeight: N, maxHeight: N)`）以明确其可视区域边界。
+  3. 内外层使用不同滚动轴：外层默认垂直滚动，内层使用 `[.horizontal, .vertical]`——SwiftUI 在双轴 ScrollView 上更可能正确路由手势。
+  4. 不要在嵌套的 ScrollView 内添加竞争手势（如 DragGesture）——这会进一步破坏手势优先级。
+- **例外**：当内层 ScrollView 尺寸严格限制且无竞争手势时，嵌套结构通常稳定。因项目模板要求无法去掉外层 ScrollView 时，此例外适用。
+- **标签**：`ui` `swiftui` `布局约束`
+- **来源**：bug-report-20260709-spatialcanvas-zoom-bugs
+- **置信度**：high
+
+---
+
+### 缩放比例分母必须与实际渲染尺寸一致：中间裁切会导致百分比错位
+
+- **场景**：zoom/slider 控件的百分比标度显示与实际视觉缩放尺寸不一致。适用于所有包含缩放控件 + preview 渲染的场景。
+- **根因**：`canvasScale` 作用的底层尺寸（`canvasDisplaySize`）经过裁切（如 760px 上限），不是用户设置的实际 canvas 尺寸（1920×1080）。slider 显示 200% (`canvasScale = 2.0`) 但实际渲染为 `760*2.0 / 1920 = 79%` 的真实尺寸，造成感知错位。中间转换尺寸改变了分数的分母。
+- **规则**：缩放控件的百分比 `canvasScale * 100` 必须直接对应实际渲染尺寸的倍数。`canvasDisplaySize` 不能引入裁切或上限——必须等于 `canvasSize`。百分比 = 渲染像素 / 真实canvas尺寸 × 100。
+- **例外**：如果 zoom 百分比需要表达"相对于视口"的缩放（而非相对于原始 canvas），需明确在 UI 上标注，且 slider 的 in: range 要重新计算。
+- **标签**：`ui` `swiftui` `架构设计`
+- **来源**：bug-report-20260709-spatialcanvas-zoom-bugs
 - **置信度**：high

@@ -282,7 +282,8 @@ struct SpatialCanvasView: View {
 					ForEach(store.elements) { element in
 						CanvasElementView(
 							element: element,
-							isSelected: element.id == store.selectedElementID
+							isSelected: element.id == store.selectedElementID,
+							canvasScale: store.canvasScale
 						)
 						.onTapGesture {
 							store.selectedElementID = element.id
