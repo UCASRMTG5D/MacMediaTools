@@ -50,7 +50,6 @@ struct CanvasElementView: View {
 			x: element.position.x * canvasScale + scaledSize.width / 2,
 			y: element.position.y * canvasScale + scaledSize.height / 2
 		)
-		.coordinateSpace(name: "canvas")
 		.allowsHitTesting(true)
 	}
 

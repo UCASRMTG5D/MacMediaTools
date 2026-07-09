@@ -18,6 +18,10 @@ final class CanvasStore: ObservableObject {
 	@Published var errorMessage: String?
 	@Published var lastOutputURL: URL?
 
+	// MARK: - Drag 状态跟踪
+	var dragStartPosition: CGPoint = .zero
+	var isDragging = false
+
 	var selectedElement: CanvasElement? {
 		get { elements.first { $0.id == selectedElementID } }
 		set {
@@ -302,6 +306,29 @@ struct SpatialCanvasView: View {
 						)
 					}
 
+					// 裁剪模式：在选中元素上叠加 CropOverlay
+					if editMode == .crop,
+					   let el = store.selectedElement,
+					   let index = store.elements.firstIndex(where: { $0.id == el.id }) {
+						let elementSize = el.effectiveSize
+						let scaledElemW = elementSize.width * store.canvasScale
+						let scaledElemH = elementSize.height * store.canvasScale
+						let originX = el.position.x * store.canvasScale
+						let originY = el.position.y * store.canvasScale
+
+						CropOverlay(normalizedRect: Binding<CGRect>(
+							get: {
+								store.elements[index].cropRect ?? CGRect(x: 0, y: 0, width: 1, height: 1)
+							},
+							set: { newRect in
+								store.elements[index].cropRect = newRect
+							}
+						))
+						.frame(width: scaledElemW, height: scaledElemH)
+						.position(x: originX + scaledElemW / 2, y: originY + scaledElemH / 2)
+						.allowsHitTesting(true)
+					}
+
 					}
 				.frame(width: scaledW, height: scaledH)
 				.coordinateSpace(name: "canvas")
@@ -339,14 +366,18 @@ struct SpatialCanvasView: View {
 		DragGesture(coordinateSpace: .named("canvas"))
 			.onChanged { value in
 				guard let index = store.elements.firstIndex(where: { $0.id == element.id }) else { return }
+				if !store.isDragging {
+					store.dragStartPosition = store.elements[index].position
+					store.isDragging = true
+				}
 				store.elements[index].position = CGPoint(
-					x: element.position.x + value.translation.width / store.canvasScale,
-					y: element.position.y + value.translation.height / store.canvasScale
+					x: store.dragStartPosition.x + value.translation.width / store.canvasScale,
+					y: store.dragStartPosition.y + value.translation.height / store.canvasScale
 				)
 				store.selectedElementID = element.id
 			}
 			.onEnded { _ in
-				// 最终位置已经更新
+				store.isDragging = false
 			}
 	}
 
