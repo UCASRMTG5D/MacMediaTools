@@ -299,6 +299,10 @@ README.md 详细说明小节 ←→  helpFeatures[].details（内容一致）
 ├─ 调试复杂问题 → debugging（内置 skill）
 │
 ├─ 前端/UI 视觉任务 → visual-engineering（内置 skill）
+│
+├─ "重新安装OMO" / "本地安装omo" → install-local-plugin
+│
+├─ "切换omo" / "切换backend" → oh-my-openagent-switch
 ```
 
 ---
