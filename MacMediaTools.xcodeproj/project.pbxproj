@@ -46,10 +46,6 @@
 		AA0000000000000000000130 /* WorkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000223 /* WorkManager.swift */; };
 		AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000224 /* DuplicateVideoScanModel.swift */; };
 		AA0000000000000000000132 /* WelcomeDefaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000225 /* WelcomeDefaultView.swift */; };
-		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
-		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
-		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
-		EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8084873CD47F896F183A5556 /* AudioTimelineView.swift */; };
 		AA0000000000000000000133 /* CanvasElement.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000226 /* CanvasElement.swift */; };
 		AA0000000000000000000134 /* CanvasElementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000227 /* CanvasElementView.swift */; };
 		AA0000000000000000000135 /* CanvasResizeHandles.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000228 /* CanvasResizeHandles.swift */; };
@@ -58,15 +54,20 @@
 		AA0000000000000000000138 /* MediaRepairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000231 /* MediaRepairView.swift */; };
 		AA0000000000000000000139 /* MediaRepairService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000232 /* MediaRepairService.swift */; };
 		AA0000000000000000000140 /* MediaRepairModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000233 /* MediaRepairModel.swift */; };
+		AA0000000000000000000141 /* SecurityBookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000234 /* SecurityBookmarkStore.swift */; };
+		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
+		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
+		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
+		EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8084873CD47F896F183A5556 /* AudioTimelineView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		02BEB260C3573273D9070860 /* ResizeSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResizeSettingsView.swift; sourceTree = "<group>"; };
-		23EE24C38B34395DB6900278 /* TrackBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TrackBarView.swift; path = TrackBarView.swift; sourceTree = "<group>"; };
-		313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TimeRulerView.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
-		4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TrackRowView.swift; path = TrackRowView.swift; sourceTree = "<group>"; };
+		23EE24C38B34395DB6900278 /* TrackBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrackBarView.swift; sourceTree = "<group>"; };
+		313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
+		4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrackRowView.swift; sourceTree = "<group>"; };
 		6194B9F0CD7D999A5178373F /* CropSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CropSettingsView.swift; sourceTree = "<group>"; };
-		8084873CD47F896F183A5556 /* AudioTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AudioTimelineView.swift; path = AudioTimelineView.swift; sourceTree = "<group>"; };
+		8084873CD47F896F183A5556 /* AudioTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioTimelineView.swift; sourceTree = "<group>"; };
 		81969E4C52AB1102DBC1A1E9 /* ThumbnailPreviewPanel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailPreviewPanel.swift; sourceTree = "<group>"; };
 		975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OutputSettingsView.swift; sourceTree = "<group>"; };
 		999837FEBF7F3C2671F458C0 /* KeyboardShortcutsModifier.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsModifier.swift; sourceTree = "<group>"; };
@@ -98,14 +99,6 @@
 		AA0000000000000000000223 /* WorkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkManager.swift; sourceTree = "<group>"; };
 		AA0000000000000000000224 /* DuplicateVideoScanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateVideoScanModel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000225 /* WelcomeDefaultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeDefaultView.swift; sourceTree = "<group>"; };
-		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		AA0000000000000000000402 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
-		AA0000000000000000000403 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
-		AA0000000000000000000404 /* CryptoKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CryptoKit.framework; path = System/Library/Frameworks/CryptoKit.framework; sourceTree = SDKROOT; };
-		AA0000000000000000000405 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
-		F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HelpPanelView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000226 /* CanvasElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasElement.swift; sourceTree = "<group>"; };
 		AA0000000000000000000227 /* CanvasElementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasElementView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000228 /* CanvasResizeHandles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasResizeHandles.swift; sourceTree = "<group>"; };
@@ -114,6 +107,15 @@
 		AA0000000000000000000231 /* MediaRepairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000232 /* MediaRepairService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairService.swift; sourceTree = "<group>"; };
 		AA0000000000000000000233 /* MediaRepairModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairModel.swift; sourceTree = "<group>"; };
+		AA0000000000000000000234 /* SecurityBookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityBookmarkStore.swift; sourceTree = "<group>"; };
+		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000402 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000403 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000404 /* CryptoKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CryptoKit.framework; path = System/Library/Frameworks/CryptoKit.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000405 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
+		F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HelpPanelView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,7 +159,7 @@
 				AA000000000000000000005A /* Models */,
 				AA000000000000000000005B /* Components */,
 				AA000000000000000000005C /* Services */,
-				AA000000000000000000005D /* Features */,
+				AA000000000000000000005D /* MacMediaTools/Features */,
 				AA0000000000000000000201 /* MacMediaToolsApp.swift */,
 				AA0000000000000000000202 /* RootView.swift */,
 				AA0000000000000000000219 /* MediaToolsUtilities.swift */,
@@ -213,13 +215,14 @@
 				AA0000000000000000000223 /* WorkManager.swift */,
 				AA0000000000000000000224 /* DuplicateVideoScanModel.swift */,
 				AA0000000000000000000229 /* SpatialCanvasService.swift */,
-			AA0000000000000000000232 /* MediaRepairService.swift */,
-			AA0000000000000000000233 /* MediaRepairModel.swift */,
-		);
-		path = Services;
+				AA0000000000000000000232 /* MediaRepairService.swift */,
+				AA0000000000000000000233 /* MediaRepairModel.swift */,
+			AA0000000000000000000234 /* SecurityBookmarkStore.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
-		AA000000000000000000005D /* Features */ = {
+		AA000000000000000000005D /* MacMediaTools/Features */ = {
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000208 /* VideoCropResizeView.swift */,
@@ -359,7 +362,8 @@
 				AA0000000000000000000137 /* SpatialCanvasView.swift in Sources */,
 				AA0000000000000000000138 /* MediaRepairView.swift in Sources */,
 				AA0000000000000000000139 /* MediaRepairService.swift in Sources */,
-			AA0000000000000000000140 /* MediaRepairModel.swift in Sources */,
+				AA0000000000000000000140 /* MediaRepairModel.swift in Sources */,
+			AA0000000000000000000141 /* SecurityBookmarkStore.swift in Sources */,
 				717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -371,10 +375,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = X8DYHGXUJH;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMTG5D.MacMediaTools;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
@@ -384,10 +388,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = X8DYHGXUJH;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMTG5D.MacMediaTools;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
@@ -397,15 +401,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MacMediaTools/MacMediaTools.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = X8DYHGXUJH;
 				INFOPLIST_FILE = MacMediaTools/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMTG5D.MacMediaTools;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -416,15 +421,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MacMediaTools/MacMediaTools.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = X8DYHGXUJH;
 				INFOPLIST_FILE = MacMediaTools/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.MacMediaTools;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMTG5D.MacMediaTools;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

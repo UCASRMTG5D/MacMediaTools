@@ -118,9 +118,14 @@ struct VideoConcatView: View {
 				GridRow {
 					Text("输出目录")
 					HStack {
-						OpenPanelButton(title: "选择目录…", mode: .folder) { urls in
-							outputFolder = urls.first
-						}
+                    OpenPanelButton(title: "选择目录…", mode: .folder) { urls in
+                        if let url = urls.first {
+                            outputFolder = url
+                            Task {
+                                await SecurityBookmarkStore.shared.saveBookmark(for: url, key: "VideoConcatOutputFolder")
+                            }
+                        }
+                    }
 						Text(outputFolder?.path ?? "(默认：第1个视频同目录)")
 							.lineLimit(1)
 							.truncationMode(.middle)
@@ -333,25 +338,33 @@ struct VideoConcatView: View {
 		return CGSize(width: w, height: h)
 	}
 
-	@MainActor
-	private func run() async {
-		guard let outURL = buildOutputURL() else { return }
-		isWorking = true
-		errorMessage = nil
-		lastOutputURL = nil
-		defer { isWorking = false }
+    @MainActor
+    private func run() async {
+        guard let outURL = buildOutputURL() else { return }
+        isWorking = true
+        errorMessage = nil
+        lastOutputURL = nil
+        defer { isWorking = false }
 
-		do {
-			try await VideoToolkit.exportConcatenated(
-				inputURLs: videos,
-				outputURL: outURL,
-				targetSize: effectiveTargetSize
-			)
-			lastOutputURL = outURL
-		} catch {
-			errorMessage = error.localizedDescription
-		}
-	}
+        let folder = outURL.deletingLastPathComponent()
+        let started = SecurityBookmarkStore.shared.startAccessing(folder)
+        defer {
+            if started {
+                SecurityBookmarkStore.shared.stopAccessing(folder)
+            }
+        }
+
+        do {
+            try await VideoToolkit.exportConcatenated(
+                inputURLs: videos,
+                outputURL: outURL,
+                targetSize: effectiveTargetSize
+            )
+            lastOutputURL = outURL
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
 	private func deleteAllSourceFiles() {
 		let urls = videos

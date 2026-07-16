@@ -85,19 +85,24 @@ struct OutputSettingsView: View {
 			Text("输出设置")
 				.font(.headline)
 
-			Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-				GridRow {
-					Text("输出目录")
-					HStack {
-						OpenPanelButton(title: "选择目录…", mode: .folder) { urls in
-							outputFolder = urls.first
-						}
-						Text(outputFolder?.path ?? "(默认：原文件同目录)")
-							.lineLimit(1)
-							.truncationMode(.middle)
-					}
-					.gridCellColumns(3)
-				}
+Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
+            GridRow {
+                Text("输出目录")
+                HStack {
+                    OpenPanelButton(title: "选择目录…", mode: .folder) { urls in
+                        if let url = urls.first {
+                            outputFolder = url
+                            Task {
+                                await SecurityBookmarkStore.shared.saveBookmark(for: url, key: "VideoCropResizeOutputFolder")
+                            }
+                        }
+                    }
+                    Text(outputFolder?.path ?? "(未选择)")
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .gridCellColumns(3)
+            }
 
 				GridRow {
 					Text("输出文件名")

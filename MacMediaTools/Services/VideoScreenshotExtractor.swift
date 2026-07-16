@@ -1,5 +1,6 @@
 import AVFoundation
 import AppKit
+import Compression
 import Foundation
 
 actor VideoScreenshotExtractor {
@@ -613,29 +614,165 @@ actor VideoScreenshotExtractor {
     func exportAsZip(files: [URL], outputURL: URL) async throws {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        // 将所有文件复制到临时目录
+        // 将文件复制到临时目录并收集待打包数据
+        var entries: [(name: String, data: Data)] = []
         for file in files {
-            let destURL = tempDir.appendingPathComponent(file.lastPathComponent)
-            try FileManager.default.copyItem(at: file, to: destURL)
+            let name = file.lastPathComponent
+            let data = try Data(contentsOf: file)
+            entries.append((name: name, data: data))
         }
 
-        // 使用系统 zip 命令打包
-        let task = Process()
-        task.currentDirectoryURL = tempDir
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
-        task.arguments = ["-r", outputURL.path, "."]
+        let archive = try Self.buildZipArchive(entries: entries)
+        try archive.write(to: outputURL, options: .atomic)
+    }
 
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
+    // 纯 Swift 手写 ZIP 容器（deflate，使用 Compression 框架），不依赖外部二进制
+    private static func buildZipArchive(entries: [(name: String, data: Data)]) throws -> Data {
+        var localHeaders: [Data] = []
+        var centralDirectory: [Data] = []
+        var offset: UInt64 = 0
 
-        try task.run()
-        task.waitUntilExit()
+        for entry in entries {
+            let fileNameData = Data(entry.name.utf8)
+            let crc = crc32(entry.data)
 
-        if task.terminationStatus != 0 {
-            throw ScreenshotExtractorError.zipFailed("打包失败")
+            // deflate 压缩（Compression 框架输出带 zlib 头尾，需剥离得到原始 deflate）
+            let compressed = try deflate(entry.data)
+            let compressedSize = UInt64(compressed.count)
+            let uncompressedSize = UInt64(entry.data.count)
+
+            // Local File Header
+            var local = Data()
+            local.append(UInt32(0x04034b50).littleEndianData) // 签名
+            local.append(UInt16(20).littleEndianData)          // 版本
+            local.append(UInt16(0).littleEndianData)           // 通用标志
+            local.append(UInt16(8).littleEndianData)           // 压缩方式 deflate
+            local.append(UInt16(0).littleEndianData)           // 修改时间
+            local.append(UInt16(0).littleEndianData)           // 修改日期
+            local.append(UInt32(crc).littleEndianData)
+            local.append(UInt32(compressedSize).littleEndianData)
+            local.append(UInt32(uncompressedSize).littleEndianData)
+            local.append(UInt16(fileNameData.count).littleEndianData)
+            local.append(UInt16(0).littleEndianData)           // extra 长度
+            local.append(fileNameData)
+            local.append(compressed)
+
+            localHeaders.append(local)
+
+            // Central Directory Header
+            var central = Data()
+            central.append(UInt32(0x02014b50).littleEndianData)
+            central.append(UInt16(20).littleEndianData)        // 版本 made by
+            central.append(UInt16(20).littleEndianData)        // 版本 needed
+            central.append(UInt16(0).littleEndianData)         // 通用标志
+            central.append(UInt16(8).littleEndianData)         // 压缩方式
+            central.append(UInt16(0).littleEndianData)         // 时间
+            central.append(UInt16(0).littleEndianData)         // 日期
+            central.append(UInt32(crc).littleEndianData)
+            central.append(UInt32(compressedSize).littleEndianData)
+            central.append(UInt32(uncompressedSize).littleEndianData)
+            central.append(UInt16(fileNameData.count).littleEndianData)
+            central.append(UInt16(0).littleEndianData)         // extra
+            central.append(UInt16(0).littleEndianData)         // comment
+            central.append(UInt16(0).littleEndianData)         // 磁盘号
+            central.append(UInt16(0).littleEndianData)         // 内部属性
+            central.append(UInt32(0).littleEndianData)         // 外部属性
+            central.append(UInt32(offset).littleEndianData)    // 本地头偏移
+            central.append(fileNameData)
+            centralDirectory.append(central)
+
+            offset += UInt64(local.count)
         }
+
+        var archive = Data()
+        for local in localHeaders { archive.append(local) }
+        let centralStart = offset
+        for central in centralDirectory { archive.append(central) }
+        let centralSize = UInt64(archive.count) - centralStart
+
+        // End of Central Directory Record
+        var eocd = Data()
+        eocd.append(UInt32(0x06054b50).littleEndianData)
+        eocd.append(UInt16(0).littleEndianData)                // 磁盘号
+        eocd.append(UInt16(0).littleEndianData)                // 中央目录起始磁盘
+        eocd.append(UInt16(entries.count).littleEndianData)    // 本磁盘条目数
+        eocd.append(UInt16(entries.count).littleEndianData)    // 总条目数
+        eocd.append(UInt32(centralSize).littleEndianData)
+        eocd.append(UInt32(centralStart).littleEndianData)
+        eocd.append(UInt16(0).littleEndianData)                // 注释长度
+        archive.append(eocd)
+
+        return archive
+    }
+
+    private static func deflate(_ data: Data) throws -> Data {
+        if data.isEmpty { return Data() }
+        var output = Data()
+
+        let status = try data.withUnsafeBytes { srcBytes -> compression_status in
+            var result: compression_status = COMPRESSION_STATUS_OK
+            try withUnsafeTemporaryAllocation(of: compression_stream.self, capacity: 1) { buf in
+                var stream = buf[0]
+                guard compression_stream_init(&stream, COMPRESSION_STREAM_ENCODE, COMPRESSION_ZLIB) == COMPRESSION_STATUS_OK else {
+                    throw ScreenshotExtractorError.zipFailed("压缩初始化失败")
+                }
+                defer { compression_stream_destroy(&stream) }
+
+                var src = srcBytes.bindMemory(to: UInt8.self)
+                guard let srcBase = src.baseAddress else {
+                    throw ScreenshotExtractorError.zipFailed("数据源为空")
+                }
+                stream.src_ptr = srcBase
+                stream.src_size = src.count
+
+                var dst = [UInt8](repeating: 0, count: max(data.count / 2, 1024))
+                repeat {
+                    dst.withUnsafeMutableBytes { dstBytes in
+                        guard let dstBase = dstBytes.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
+                        stream.dst_ptr = dstBase
+                        stream.dst_size = dstBytes.count
+                        result = compression_stream_process(&stream, 0)
+                    }
+                    let written = dst.count - stream.dst_size
+                    if written > 0 {
+                        output.append(dst, count: written)
+                    }
+                    if stream.dst_size == 0 {
+                        dst = [UInt8](repeating: 0, count: max(dst.count * 2, 1024))
+                    }
+                } while result == COMPRESSION_STATUS_OK
+            }
+            return result
+        }
+
+        guard status == COMPRESSION_STATUS_END else {
+            throw ScreenshotExtractorError.zipFailed("压缩失败")
+        }
+
+        // 剥离 zlib 头（2 字节）与 adler32 尾（4 字节），保留原始 deflate
+        let header = 2
+        let trailer = 4
+        guard output.count > header + trailer else {
+            throw ScreenshotExtractorError.zipFailed("压缩数据异常")
+        }
+        return output.subdata(in: header..<(output.count - trailer))
+    }
+
+    private static func crc32(_ data: Data) -> UInt32 {
+        var crc: UInt32 = 0xFFFFFFFF
+        for b in data {
+            crc ^= UInt32(b)
+            for _ in 0..<8 {
+                if crc & 1 != 0 {
+                    crc = (crc >> 1) ^ 0xEDB88320
+                } else {
+                    crc >>= 1
+                }
+            }
+        }
+        return ~crc
     }
 
     // MARK: - Utility Methods
@@ -646,5 +783,12 @@ actor VideoScreenshotExtractor {
 
     nonisolated private func formatTimestamp(_ seconds: Double) -> String {
         formatFileNameTimestamp(seconds)
+    }
+}
+
+private extension FixedWidthInteger {
+    var littleEndianData: Data {
+        var value = self.littleEndian
+        return Data(bytes: &value, count: MemoryLayout.stride(ofValue: value))
     }
 }

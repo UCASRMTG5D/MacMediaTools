@@ -185,3 +185,15 @@ MacMediaTools/
 - **所有处理完全在本地完成**
 - 不上传文件、不联网
 - 不收集用户数据
+
+## 下载 / Download
+
+最新版从 GitHub Releases 获取（macOS 13.0+，Apple Silicon / Intel 通用）：
+
+**👉 https://github.com/UCASRMTG5D/MacMediaTools/releases**
+
+- 下载 `.dmg` / `.pkg` 后拖入「应用程序」即可使用
+- 安装包已用 **Developer ID 签名 + Apple 公证**，可直接打开，无 Gatekeeper 拦截
+- 如需从源码自行编译，见上方「编译 / 运行」
+
+> 应用完全本地运行，无需账号、不联网。

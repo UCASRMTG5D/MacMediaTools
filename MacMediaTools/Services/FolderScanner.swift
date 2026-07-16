@@ -7,6 +7,9 @@ enum FolderScanner {
 	) -> [URL] {
 		let fm = FileManager.default
 		let keys: [URLResourceKey] = [.isRegularFileKey, .nameKey]
+		let didStart = folder.startAccessingSecurityScopedResource()
+		defer { if didStart { folder.stopAccessingSecurityScopedResource() } }
+
 		guard let enumerator = fm.enumerator(
 			at: folder,
 			includingPropertiesForKeys: keys,

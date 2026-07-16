@@ -2,6 +2,7 @@ import AppKit
 import AVKit
 import SwiftUI
 import UniformTypeIdentifiers
+import Combine
 
 struct VideoCropResizeView: View {
 	// MARK: - Shared
@@ -69,63 +70,63 @@ struct VideoCropResizeView: View {
 		inputURL != nil && displaySize != nil && (enableCrop || enableResize) && !isWorking
 	}
 
-	var body: some View {
-		ScrollView(.vertical, showsIndicators: true) {
-			VStack(alignment: .leading, spacing: 16) {
-				fileSelectionSection
-				infoSection
+var body: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 16) {
+                fileSelectionSection
+                infoSection
 
-				if inputURL != nil {
-					CropSettingsView(
-						enableCrop: $enableCrop,
-						normalizedRect: $normalizedRect,
-						cropWidthText: $cropWidthText,
-						cropHeightText: $cropHeightText,
-						isSyncingCropField: $isSyncingCropField,
-						player: player,
-						cachedCGImage: cachedCGImage,
-						isVideo: isVideo,
-						displaySize: displaySize,
-						sourceSize: sourceSize,
-						onSchedulePreviewGeneration: schedulePreviewGeneration
-					)
+                if inputURL != nil {
+                    CropSettingsView(
+                        enableCrop: $enableCrop,
+                        normalizedRect: $normalizedRect,
+                        cropWidthText: $cropWidthText,
+                        cropHeightText: $cropHeightText,
+                        isSyncingCropField: $isSyncingCropField,
+                        player: player,
+                        cachedCGImage: cachedCGImage,
+                        isVideo: isVideo,
+                        displaySize: displaySize,
+                        sourceSize: sourceSize,
+                        onSchedulePreviewGeneration: schedulePreviewGeneration
+                    )
 
-					ResizeSettingsView(
-						enableResize: $enableResize,
-						targetWidth: $targetWidth,
-						targetHeight: $targetHeight,
-						scaleMode: $scaleMode,
-						sourceSize: sourceSize,
-						onSchedulePreviewGeneration: schedulePreviewGeneration
-					)
+                    ResizeSettingsView(
+                        enableResize: $enableResize,
+                        targetWidth: $targetWidth,
+                        targetHeight: $targetHeight,
+                        scaleMode: $scaleMode,
+                        sourceSize: sourceSize,
+                        onSchedulePreviewGeneration: schedulePreviewGeneration
+                    )
 
-					OutputSettingsView(
-						outputFolder: $outputFolder,
-						outputFileName: $outputFileName,
-						isWorking: $isWorking,
-						lastOutputURL: $lastOutputURL,
-						errorMessage: $errorMessage,
-						showDeleteConfirmation: $showDeleteConfirmation,
-						canExport: canExport,
-						inputURL: inputURL,
-						enableResize: enableResize,
-						effectiveTargetSize: effectiveTargetSize,
-						stretchPreviewResult: stretchPreviewResult,
-						sourceSize: sourceSize,
-						thumbnailImage: thumbnailFromDisplay(),
-						onExport: run,
-						onDeleteSourceFile: deleteSourceFile
-					)
-				}
+                    OutputSettingsView(
+                        outputFolder: $outputFolder,
+                        outputFileName: $outputFileName,
+                        isWorking: $isWorking,
+                        lastOutputURL: $lastOutputURL,
+                        errorMessage: $errorMessage,
+                        showDeleteConfirmation: $showDeleteConfirmation,
+                        canExport: canExport,
+                        inputURL: inputURL,
+                        enableResize: enableResize,
+                        effectiveTargetSize: effectiveTargetSize,
+                        stretchPreviewResult: stretchPreviewResult,
+                        sourceSize: sourceSize,
+                        thumbnailImage: thumbnailFromDisplay(),
+                        onExport: run,
+                        onDeleteSourceFile: deleteSourceFile
+                    )
+                }
 
-				Spacer()
-			}
-			.padding()
-			.frame(maxWidth: .infinity)
-		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity)
-		.background(Color(NSColor.controlBackgroundColor))
-	}
+                Spacer()
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(NSColor.controlBackgroundColor))
+    }
 
 	// MARK: - Subviews
 
@@ -159,66 +160,64 @@ struct VideoCropResizeView: View {
 
 	// MARK: - Actions
 
-	private func selectInput(_ url: URL) {
-		inputURL = url
-		errorMessage = nil
-		lastOutputURL = nil
-		stretchPreviewResult = nil
-		cachedCGImage = nil
-		normalizedRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+private func selectInput(_ url: URL) {
+        inputURL = url
+        errorMessage = nil
+        lastOutputURL = nil
+        stretchPreviewResult = nil
+        cachedCGImage = nil
+        normalizedRect = CGRect(x: 0, y: 0, width: 1, height: 1)
 
-		// Detect type
-		let utType = detectType(url)
-		isVideo = utType?.conforms(to: .video) == true || utType?.conforms(to: .movie) == true
+        // Detect type
+        let utType = detectType(url)
+        isVideo = utType?.conforms(to: .video) == true || utType?.conforms(to: .movie) == true
 
-		if isVideo {
-			player = AVPlayer(url: url)
-			player?.play()
-		} else {
-			player = nil
-			loadCGImage(from: url)
-		}
+        if isVideo {
+            player = AVPlayer(url: url)
+            player?.play()
+        } else {
+            player = nil
+            loadCGImage(from: url)
+        }
 
-		Task {
-			do {
-				if isVideo {
-					let info = try await VideoToolkit.readDisplayInfo(url: url)
-					displaySize = info.displaySize
-					infoText = "原始宽高：\(Int(info.displaySize.width)) × \(Int(info.displaySize.height))"
-				} else {
-					guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
-						throw VideoToolkitError.exportFailed("无法读取图片")
-					}
-					let opts: [CFString: Any] = [
-						kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
-						kCGImageSourceCreateThumbnailWithTransform: true
-					]
-					guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, opts as CFDictionary) else {
-						throw VideoToolkitError.exportFailed("无法读取图片")
-					}
-					let sz = CGSize(width: image.width, height: image.height)
-					displaySize = sz
-					infoText = "原始尺寸：\(Int(sz.width)) × \(Int(sz.height))"
-				}
-
-				if outputFolder == nil { outputFolder = url.deletingLastPathComponent() }
-				if outputFileName.isEmpty { outputFileName = defaultOutputName(for: url) }
-
-				if let display = displaySize {
-					targetWidth = String(Int(display.width))
-					targetHeight = String(Int(display.height))
-				}
-				// Sync crop fields after display size is known
-				if enableCrop, let d = displaySize {
-					cropWidthText = String(Int(normalizedRect.width * d.width))
-					cropHeightText = String(Int(normalizedRect.height * d.height))
-				}
-			} catch {
-				infoText = "读取文件信息失败：\(error.localizedDescription)"
-				displaySize = nil
-			}
-		}
-	}
+        Task {
+            do {
+                if isVideo {
+                    let info = try await VideoToolkit.readDisplayInfo(url: url)
+                    displaySize = info.displaySize
+                    infoText = "原始宽高：\(Int(info.displaySize.width)) × \(Int(info.displaySize.height))"
+                } else {
+                    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+                        throw VideoToolkitError.exportFailed("无法读取图片")
+                    }
+                    let opts: [CFString: Any] = [
+                        kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true
+                    ]
+                    guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, opts as CFDictionary) else {
+                        throw VideoToolkitError.exportFailed("无法读取图片")
+                    }
+                    let sz = CGSize(width: image.width, height: image.height)
+                    displaySize = sz
+                    infoText = "原始尺寸：\(Int(sz.width)) × \(Int(sz.height))"
+                }
+                
+                // Set target size based on display size
+                if let display = displaySize {
+                    targetWidth = String(Int(display.width))
+                    targetHeight = String(Int(display.height))
+                }
+                // Sync crop fields after display size is known
+                if enableCrop, let d = displaySize {
+                    cropWidthText = String(Int(normalizedRect.width * d.width))
+                    cropHeightText = String(Int(normalizedRect.height * d.height))
+                }
+            } catch {
+                infoText = "读取文件信息失败：\(error.localizedDescription)"
+                displaySize = nil
+            }
+        }
+    }
 
 	private func detectType(_ url: URL) -> UTType? {
 		if let utType = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType {
@@ -262,12 +261,12 @@ struct VideoCropResizeView: View {
 		return "\(base)_output.\(ext)"
 	}
 
-	private func buildOutputURL() -> URL? {
-		guard let inputURL else { return nil }
-		let folder = outputFolder ?? inputURL.deletingLastPathComponent()
-		let name = outputFileName.isEmpty ? defaultOutputName(for: inputURL) : outputFileName
-		return folder.appendingPathComponent(name)
-	}
+private func buildOutputURL() -> URL? {
+        guard let inputURL else { return nil }
+        guard let folder = outputFolder else { return nil }
+        let name = outputFileName.isEmpty ? defaultOutputName(for: inputURL) : outputFileName
+        return folder.appendingPathComponent(name)
+    }
 
 	// MARK: - Stretch Preview Generation
 
@@ -342,51 +341,88 @@ struct VideoCropResizeView: View {
 
 	// MARK: - Export
 
-	@MainActor
-	private func run() async {
-		guard let inputURL, let outURL = buildOutputURL() else { return }
-		isWorking = true
-		errorMessage = nil
-		lastOutputURL = nil
-		defer { isWorking = false }
+@MainActor
+    private func run() async {
+        guard let inputURL else { return }
+        
+        // Resolve the output folder from bookmark or use the stored URL if valid
+        var outputFolderResolved: URL? = outputFolder
+        if outputFolderResolved == nil {
+            // Try to resolve from bookmark
+            outputFolderResolved = await SecurityBookmarkStore.shared.resolveBookmark(key: "VideoCropResizeOutputFolder")
+            // Update the stored URL if we successfully resolved from bookmark
+            if let resolvedURL = outputFolderResolved {
+                outputFolder = resolvedURL
+            }
+        }
+        
+        // If still no output folder, show error and return
+        guard let folder = outputFolderResolved else {
+            errorMessage = "请先选择输出目录"
+            return
+        }
+        
+        let name = outputFileName.isEmpty ? defaultOutputName(for: inputURL) : outputFileName
+        let outputURL = folder.appendingPathComponent(name)
+        
+        // 检查文件是否已存在
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            errorMessage = "文件已存在，请更改文件名或选择其他目录"
+            return
+        }
+        
+        isWorking = true
+        errorMessage = nil
+        lastOutputURL = nil
+        defer { isWorking = false }
+        
+        // Start accessing the security-scoped resource
+        let started = SecurityBookmarkStore.shared.startAccessing(folder)
+        defer {
+            if started {
+                SecurityBookmarkStore.shared.stopAccessing(folder)
+            }
+        }
+        
+        do {
+            if isVideo {
+                try await VideoToolkit.exportCroppedAndResized(
+                    inputURL: inputURL,
+                    outputURL: outputURL,
+                    cropRect: effectiveCropRect,
+                    targetSize: effectiveTargetSize,
+                    scaleMode: scaleMode
+                )
+            } else {
+                try await VideoToolkit.exportImageCroppedAndResized(
+                    inputURL: inputURL,
+                    outputURL: outputURL,
+                    cropRect: effectiveCropRect,
+                    targetSize: effectiveTargetSize,
+                    scaleMode: scaleMode
+                )
+            }
+            lastOutputURL = outputURL
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
-		do {
-			if isVideo {
-				try await VideoToolkit.exportCroppedAndResized(
-					inputURL: inputURL,
-					outputURL: outURL,
-					cropRect: effectiveCropRect,
-					targetSize: effectiveTargetSize,
-					scaleMode: scaleMode
-				)
-			} else {
-				try await VideoToolkit.exportImageCroppedAndResized(
-					inputURL: inputURL,
-					outputURL: outURL,
-					cropRect: effectiveCropRect,
-					targetSize: effectiveTargetSize,
-					scaleMode: scaleMode
-				)
-			}
-			lastOutputURL = outURL
-		} catch {
-			errorMessage = error.localizedDescription
-		}
-	}
-
-	private func deleteSourceFile() {
-		guard let inputURL else { return }
-		do {
-			try NSWorkspace.shared.recycle([inputURL])
-			self.inputURL = nil
-			displaySize = nil
-			player = nil
-			cachedCGImage = nil
-			stretchPreviewResult = nil
-			normalizedRect = CGRect(x: 0, y: 0, width: 1, height: 1)
-			infoText = "源文件已移入废纸篓"
-		} catch {
-			errorMessage = "删除失败：\(error.localizedDescription)"
-		}
-	}
+private func deleteSourceFile() {
+        guard let inputURL else { return }
+        do {
+            try NSWorkspace.shared.recycle([inputURL])
+            self.inputURL = nil
+            displaySize = nil
+            player = nil
+            cachedCGImage = nil
+            stretchPreviewResult = nil
+            normalizedRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+            infoText = "源文件已移入废纸篓"
+        } catch {
+            errorMessage = "删除失败：\(error.localizedDescription)"
+        }
+    }
 }
+
+// MARK: - Bookmark Management

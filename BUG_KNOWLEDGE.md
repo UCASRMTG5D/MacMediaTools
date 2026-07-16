@@ -3,7 +3,7 @@
 > 从 bug-reports/ 复盘文档中提炼的可复用经验。
 > AI 在写代码前应读取此文件，避免重复踩坑。
 > 每条经验都标注了精确场景、限制条件和置信度。
-> 更新于: 2026-07-09 18:00
+> 更新于: 2026-07-10 14:00
 
 ---
 
@@ -20,6 +20,7 @@
 - [swiftui](#swiftui)
 - [xcodebuild](#xcodebuild)
 - [file-manager](#file-manager)
+- [coregraphics](#coregraphics)
 - [osascript](#osascript)
 
 ### 按模式分类
@@ -30,6 +31,8 @@
 - [架构设计](#架构设计)
 - [自动化部署](#自动化部署)
 - [布局约束](#布局约束)
+- [坐标变换](#坐标变换)
+- [手势](#手势)
 
 ---
 
@@ -55,6 +58,8 @@
 - **例外**：仅读取单个帧的像素值而不做帧间比较或通道逐位计算时，不需要此处理。使用 `NSImage` / `CGImage` 的 UIKit/SwiftUI 上层 API（如直接显示图片）也不受影响。
 - **来源**：bug-report-20260702-184520-screenshot-count-mismatch
 - **置信度**：high
+- **标签**：`media-processing` `avfoundation` `像素格式`
+- **关联条目**：见「CGContext bitmapInfo：禁止直接使用源图片像素格式」— 同类问题：底层 API 的像素格式不可假设，必须检测或标准化。
 
 ---
 
@@ -113,6 +118,19 @@
 - **例外**：无。此模式在所有帧替换场景中应统一。
 - **来源**：bug-report-20260702-184520-screenshot-count-mismatch
 - **置信度**：high
+
+---
+
+### CGContext bitmapInfo：禁止直接使用源图片像素格式
+
+- **场景**：`CGImage` 缩放/重绘时通过 `CGContext` 绘制，使用源图片的 `bitmapInfo` 和 `bitsPerComponent` 创建上下文。适用于所有 `scaleCGImageStatic` 及类似的图片处理代码。
+- **根因**：`CGContext(data:width:height:bitsPerComponent:bytesPerRow:space:bitmapInfo:)` 只支持有限的像素格式组合。JPEG 图片的 `alphaInfo` 为 `.none`（=0），在 RGB 色彩空间下不被支持；非预乘 Alpha（`.last`/`.first`）和浮点分量（`.floatComponents`）同样不被支持。直接使用 `image.bitmapInfo` 会导致 `CGContext` 创建失败返回 nil，抛"缩放失败"。
+- **规则**：创建 CGContext 时必须使用**已知兼容的标准像素格式**，不能直接使用源图片的 bitmapInfo。推荐固定使用 8bpc sRGB premultipliedLast（`CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Host.rawValue`），CoreGraphics 在 `ctx.draw()` 时会自动转换源图格式。
+- **例外**：若确定源图来自固定设备（如同一台摄像机的 8bpc 视频帧），可以直接使用源图 bitmapInfo。
+- **标签**：`media-processing` `coregraphics` `像素格式`
+- **来源**：bug-report-20260706-crop-resize-canvas-all (Bug 1/3/4)
+- **置信度**：high
+- **关联条目**：见「像素格式字节序：AVFoundation 返回格式因架构而异」— 同类问题：底层 API 的像素格式不可假设，必须检测或标准化。
 
 ---
 
@@ -245,14 +263,18 @@
 
 ---
 
-### CGContext bitmapInfo：禁止直接使用源图片像素格式
+### ExFAT 文件"已锁定"排查：格式与扩展名一致性优先于 xattr
 
-- **场景**：`CGImage` 缩放/重绘时通过 `CGContext` 绘制，使用源图片的 `bitmapInfo` 和 `bitsPerComponent` 创建上下文。适用于所有 `scaleCGImageStatic` 及类似的图片处理代码。
-- **根因**：`CGContext(data:width:height:bitsPerComponent:bytesPerRow:space:bitmapInfo:)` 只支持有限的像素格式组合。JPEG 图片的 `alphaInfo` 为 `.none`（=0），在 RGB 色彩空间下不被支持；非预乘 Alpha（`.last`/`.first`）和浮点分量（`.floatComponents`）同样不被支持。直接使用 `image.bitmapInfo` 会导致 `CGContext` 创建失败返回 nil，抛"缩放失败"。
-- **规则**：创建 CGContext 时必须使用**已知兼容的标准像素格式**，不能直接使用源图片的 bitmapInfo。推荐固定使用 8bpc sRGB premultipliedLast（`CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Host.rawValue`），CoreGraphics 在 `ctx.draw()` 时会自动转换源图格式。
-- **例外**：若确定源图来自固定设备（如同一台摄像机的 8bpc 视频帧），可以直接使用源图 bitmapInfo。
-- **标签**：`media-processing` `coregraphics` `nil-safety`
-- **来源**：bug-report-20260706-image-crop-resize-bugs
+- **场景**：ExFAT 外置卷上的媒体文件在 Preview 中显示"已锁定"（标题栏），无法编辑保存，但 Finder 无锁图标、Terminal 操作正常。适用于所有 ExFAT 卷上文件行为异常的排查。
+- **根因**：文件实际格式与扩展名不一致（如 WebP 内容但扩展名为 `.jpg`）。Preview 根据扩展名选择编解码器：`.jpg` → JPEG 编解码器 → 无法编辑 WebP 内容 → 显示"已锁定"（实质是"当前格式无法编辑保存"）。非文件系统层面的锁定。
+- **规则**：
+  1. 排查顺序：**先 `file` 命令验证实际格式**，再查 xattr/权限/ACL
+  2. macOS 的 `sips -g format` 可快速检测文件真实编码格式
+  3. 扩展名与实际格式不匹配时，Preview/viewer 可能能显示但不能编辑保存
+  4. `xattr -c` / `._` 侧车文件清理通常不是这类问题的解决方案
+- **例外**：如果文件格式与扩展名一致但仍显示"已锁定"，则需排查 xattr（`com.apple.macl`、`com.apple.quarantine`）、Finder flags（`chflags`）、权限等文件系统层面原因。
+- **标签**：`file-io` `exfat` `investigation-methodology`
+- **来源**：ExFAT_Locked_Files_Deep_Dive.md (Chapter 9)
 - **置信度**：high
 
 ---
@@ -264,7 +286,7 @@
 - **规则**：在使用 `.aspectRatio()` 约束的 Image 上必须加 `.frame(maxWidth: .infinity, maxHeight: .infinity)` 强制视图填满容器，或改用 `.aspectRatio(contentMode: .fill)` 配合 `.clipped()`。
 - **例外**：`VideoPlayer` 没有 `.aspectRatio()` 约束，默认填满容器，不受此问题影响。
 - **标签**：`ui` `swiftui`
-- **来源**：bug-report-20260706-image-crop-resize-bugs
+- **来源**：bug-report-20260706-crop-resize-canvas-all (Bug 1/3/4)
 - **置信度**：high
 
 ---
@@ -276,7 +298,7 @@
 - **规则**：ScrollView 内**永远不要**用 `.offset()` + `DragGesture` 做手动拖动。ScrollView 本身就支持 trackpad/鼠标滚轮翻阅内容——这是它的核心职责。超大内容直接放进 ScrollView，由 ScrollView 的滚动机制处理浏览。
 - **例外**：如需微调元素位置（非拖动整个画布），且 offset 范围在可视区内（如元素对齐微调），可以使用 `.offset()`。但不要与 ScrollView 的滚动功能竞争。
 - **标签**：`ui` `swiftui` `布局约束`
-- **来源**：bug-report-20260709-spatialcanvas-zoom-bugs
+- **来源**：bug-report-20260706-crop-resize-canvas-all (Spatial Round 1)
 - **置信度**：high
 
 ---
@@ -292,7 +314,7 @@
   4. 不要在嵌套的 ScrollView 内添加竞争手势（如 DragGesture）——这会进一步破坏手势优先级。
 - **例外**：当内层 ScrollView 尺寸严格限制且无竞争手势时，嵌套结构通常稳定。因项目模板要求无法去掉外层 ScrollView 时，此例外适用。
 - **标签**：`ui` `swiftui` `布局约束`
-- **来源**：bug-report-20260709-spatialcanvas-zoom-bugs
+- **来源**：bug-report-20260706-crop-resize-canvas-all (Spatial Round 1)
 - **置信度**：high
 
 ---
@@ -304,5 +326,39 @@
 - **规则**：缩放控件的百分比 `canvasScale * 100` 必须直接对应实际渲染尺寸的倍数。`canvasDisplaySize` 不能引入裁切或上限——必须等于 `canvasSize`。百分比 = 渲染像素 / 真实canvas尺寸 × 100。
 - **例外**：如果 zoom 百分比需要表达"相对于视口"的缩放（而非相对于原始 canvas），需明确在 UI 上标注，且 slider 的 in: range 要重新计算。
 - **标签**：`ui` `swiftui` `架构设计`
-- **来源**：bug-report-20260709-spatialcanvas-zoom-bugs
+- **来源**：bug-report-20260706-crop-resize-canvas-all (Spatial Round 1)
+- **置信度**：high
+
+---
+
+### 缩放坐标变换：CanvasResizeHandles 必须应用 canvasScale
+
+- **场景**：`CanvasResizeHandles`（8锚点缩放手柄）叠加在缩放后的画布 ZStack 上使用 `.position()` 定位手柄并响应 `DragGesture`。适用于所有带 zoom/scaling 的画布编辑器。
+- **根因**：`CanvasResizeHandles` 使用 `element.canvasFrame`（逻辑坐标系，如 1920×1080）计算手柄位置，而 ZStack 被 `canvasScale` 缩放（如 0.5× → 960×540），且 `.coordinateSpace(.named("canvas"))` 绑定到缩放后的 frame。当 `canvasScale ≠ 1.0` 时：
+  1. 手柄 `.position()` 坐标超出坐标空间范围（如 1920px → 960px 空间中跑到可见区外）
+  2. `DragGesture` 的 `translation` 在缩放坐标系中，直接应用于逻辑坐标导致效果与视觉不一致
+  3. `canvasScale` 参数未传入 `CanvasResizeHandles`，无法感知缩放状态
+- **规则**：
+  1. `CanvasResizeHandles` 必须接收 `canvasScale` 参数（`let canvasScale: CGFloat`）
+  2. 手柄位置计算（`position(for:in:)`）中 frame 坐标必须乘以 `canvasScale`：`frame.maxX * canvasScale`
+  3. 拖拽增量必须除以 `canvasScale` 映射回逻辑坐标：`translation.width / canvasScale`
+- **例外**：如果画布始终保持 `canvasScale = 1.0`（不可缩放），则不需要此变换。但任何支持 zoom 的画布编辑器都必须应用。
+- **标签**：`ui` `swiftui` `坐标变换`
+- **来源**：bug-report-20260706-crop-resize-canvas-all (Spatial Round 5)
+- **置信度**：high
+
+---
+
+### 嵌套 ScrollView 中的 DragGesture：条件性移除内层 ScrollView
+
+- **场景**：嵌套 ScrollView（外层模板 ScrollView + 内层画布 ScrollView）内需要对子视图使用 DragGesture（拖拽移动、缩放锚点、裁剪端点）。适用于所有嵌套 ScrollView + 编辑交互的场景。
+- **根因**：`.highPriorityGesture()` 虽然能提升 DragGesture 优先级，但在嵌套 ScrollView 结构中无法保证完全压制内层 ScrollView 的滚动。SwiftUI 的手势路由在多层 ScrollView 中仍可能将滚动手势优先分配给 ScrollView。规则叠加是缓解而非根治。
+- **规则**：
+  1. 需要 DragGesture 的编辑模式下，**条件性移除内层 ScrollView**——画布内容直接渲染在 plain 父视图中，DragGesture 无需与滚动竞争
+  2. 仅浏览模式下保留 ScrollView 包裹支持滚动
+  3. 实现方式：`Group { if needsDrag { plainView } else { ScrollView { content } } }`，`needsDrag` 由编辑模式状态决定
+  4. 条件移除 ScrollView 后，DragGesture 仍使用 `.highPriorityGesture()` 作为额外保障
+- **例外**：如果画布尺寸始终适配视口（不会超出可见区域），可以保留 ScrollView + `.highPriorityGesture()` 方案。但任何可能缩放导致画布超出视口的编辑器都应采用条件移除策略。
+- **标签**：`ui` `swiftui` `布局约束` `手势`
+- **来源**：bug-report-20260706-crop-resize-canvas-all (Spatial Round 6)
 - **置信度**：high

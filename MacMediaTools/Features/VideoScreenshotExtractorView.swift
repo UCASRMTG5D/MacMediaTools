@@ -265,26 +265,32 @@ struct VideoScreenshotExtractorView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("输出路径")
-                        .font(.headline)
+VStack(alignment: .leading, spacing: 8) {
+            Text("输出路径")
+                .font(.headline)
 
-                    OpenPanelButton(title: "选择导出目录", mode: .folder) { urls in
-                        outputDirectory = urls.first
-                    }
-                    .buttonStyle(.bordered)
-
-                    if let outputDirectory = outputDirectory {
-                        Text(outputDirectory.path)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(3)
-                    } else {
-                        Text("请先选择导出目录")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+            OpenPanelButton(title: "选择导出目录", mode: .folder) { urls in
+                outputDirectory = urls.first
+                // Save bookmark for the selected directory
+                if let dir = urls.first {
+                    Task {
+                        await SecurityBookmarkStore.shared.saveBookmark(for: dir, key: "VideoScreenshotExtractorOutputDirectory")
                     }
                 }
+            }
+            .buttonStyle(.bordered)
+
+            if let outputDirectory = outputDirectory {
+                Text(outputDirectory.path)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            } else {
+                Text("请先选择导出目录")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+        }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("操作")
@@ -745,10 +751,20 @@ struct VideoScreenshotExtractorView: View {
                 if !FileManager.default.fileExists(atPath: saveDir.path) {
                     try FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
                 }
+                
+                // Start accessing the security-scoped resource
+                let started = SecurityBookmarkStore.shared.startAccessing(saveDir)
+                defer {
+                    if started {
+                        SecurityBookmarkStore.shared.stopAccessing(saveDir)
+                    }
+                }
+                
                 let savedURLs = try await VideoScreenshotExtractor.shared.saveFrames(
                     displayedFrames, to: saveDir, format: outputFormat
                 )
                 await MainActor.run {
+                    // Use the resolved directory path for showing in Finder
                     saveSuccessPath = saveDir.path
                     showSaveSuccess = true
                     logManager.logExtractionComplete(frameCount: savedURLs.count, duration: 0)

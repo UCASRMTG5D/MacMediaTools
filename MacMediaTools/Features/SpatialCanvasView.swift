@@ -519,139 +519,169 @@ struct SpatialCanvasView: View {
 
 	// MARK: - Output Section
 
-	private var outputSection: some View {
-		VStack(alignment: .leading, spacing: 8) {
-			Label("导出", systemImage: "square.and.arrow.up")
-				.font(.headline)
+private var outputSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("导出", systemImage: "square.and.arrow.up")
+                .font(.headline)
 
-			if store.elements.isEmpty {
-				Text("请先导入素材")
-					.font(.caption)
-					.foregroundStyle(.secondary)
-			} else {
-				Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
-					GridRow {
-						Text("画布尺寸")
-						Picker("宽", selection: Binding<Int>(
-							get: { Int(store.settings.canvasSize.width) },
-							set: { store.settings.canvasSize.width = CGFloat($0) }
-						)) {
-							Text("1920").tag(1920)
-							Text("1280").tag(1280)
-							Text("1080").tag(1080)
-							Text("720").tag(720)
-							Text("自定义").tag(0)
-						}
-						.pickerStyle(.menu)
-						.frame(width: 100)
+            if store.elements.isEmpty {
+                Text("请先导入素材")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
+                    GridRow {
+                        Text("画布尺寸")
+                        Picker("宽", selection: Binding<Int>(
+                            get: { Int(store.settings.canvasSize.width) },
+                            set: { store.settings.canvasSize.width = CGFloat($0) }
+                        )) {
+                            Text("1920").tag(1920)
+                            Text("1280").tag(1280)
+                            Text("1080").tag(1080)
+                            Text("720").tag(720)
+                            Text("自定义").tag(0)
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 100)
 
-						Text("×")
+                        Text("×")
 
-						Picker("高", selection: Binding<Int>(
-							get: { Int(store.settings.canvasSize.height) },
-							set: { store.settings.canvasSize.height = CGFloat($0) }
-						)) {
-							Text("1080").tag(1080)
-							Text("720").tag(720)
-							Text("1920").tag(1920)
-							Text("1280").tag(1280)
-							Text("自定义").tag(0)
-						}
-						.pickerStyle(.menu)
-						.frame(width: 100)
-					}
+                        Picker("高", selection: Binding<Int>(
+                            get: { Int(store.settings.canvasSize.height) },
+                            set: { store.settings.canvasSize.height = CGFloat($0) }
+                        )) {
+                            Text("1080").tag(1080)
+                            Text("720").tag(720)
+                            Text("1920").tag(1920)
+                            Text("1280").tag(1280)
+                            Text("自定义").tag(0)
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 100)
+                    }
 
-					GridRow {
-						Text("输出目录")
-						HStack {
-							OpenPanelButton(title: "选择…", mode: .folder) { urls in
-								store.outputFolder = urls.first
-							}
-							Text(store.outputFolder?.path ?? "(默认：桌面)")
-								.lineLimit(1)
-								.truncationMode(.middle)
-						}
-						.gridCellColumns(3)
-					}
+                    GridRow {
+                        Text("输出目录")
+                        HStack {
+                            OpenPanelButton(title: "选择…", mode: .folder) { urls in
+                                if let url = urls.first {
+                                    store.outputFolder = url
+                                    // Save bookmark for the selected folder
+                                    Task {
+                                        await SecurityBookmarkStore.shared.saveBookmark(for: url, key: "SpatialCanvasOutputFolder")
+                                    }
+                                }
+                            }
+                            Text(store.outputFolder?.path ?? "(未选择)")
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .gridCellColumns(3)
+                    }
 
-					GridRow {
-						Text("文件名")
-						TextField("canvas_composition.mp4", text: $store.outputFileName)
-							.frame(maxWidth: 300)
-							.gridCellColumns(3)
-					}
-				}
+                    GridRow {
+                        Text("文件名")
+                        TextField("canvas_composition.mp4", text: $store.outputFileName)
+                            .frame(maxWidth: 300)
+                            .gridCellColumns(3)
+                    }
+                }
 
-				HStack(spacing: 10) {
-					Button(isExporting ? "导出中…" : "开始导出") {
-						Task { await exportCanvas() }
-					}
-					.disabled(store.elements.isEmpty || isExporting)
+                HStack(spacing: 10) {
+                    Button(isExporting ? "导出中…" : "开始导出") {
+                        Task { await exportCanvas() }
+                    }
+                    .disabled(store.elements.isEmpty || isExporting)
 
-					if let errorMsg = store.errorMessage {
-						Text(errorMsg)
-							.foregroundStyle(.red)
-							.font(.caption)
-					}
+                    if let errorMsg = store.errorMessage {
+                        Text(errorMsg)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                    }
 
-					if let lastURL = store.lastOutputURL {
-						Button("在 Finder 中显示") {
-							NSWorkspace.shared.activateFileViewerSelecting([lastURL])
-						}
-						.buttonStyle(.borderless)
-						.font(.caption)
-					}
-				}
-			}
-		}
-	}
+                    if let lastURL = store.lastOutputURL {
+                        Button("在 Finder 中显示") {
+                            NSWorkspace.shared.activateFileViewerSelecting([lastURL])
+                        }
+                        .buttonStyle(.borderless)
+                        .font(.caption)
+                    }
+                }
+            }
+        }
+    }
 
 	// MARK: - Export
 
-	private func exportCanvas() async {
-		guard await WorkManager.shared.requestStart(.spatialCanvas) else { return }
-		isExporting = true
-		store.isWorking = true
-		store.errorMessage = nil
-		defer {
-			isExporting = false
-			store.isWorking = false
-			WorkManager.shared.finishWork(.spatialCanvas)
-		}
+private func exportCanvas() async {
+        guard await WorkManager.shared.requestStart(.spatialCanvas) else { return }
+        isExporting = true
+        store.isWorking = true
+        store.errorMessage = nil
+        defer {
+            isExporting = false
+            store.isWorking = false
+            WorkManager.shared.finishWork(.spatialCanvas)
+        }
 
-		let inputs = store.elements.map { el in
-			CanvasElementInput(
-				sourceURL: el.sourceURL,
-				mediaType: el.mediaType,
-				displaySize: el.displaySize,
-				duration: el.duration,
-				position: el.position,
-				effectiveSize: el.effectiveSize,
-				cropRect: el.cropRect,
-				volume: el.volume,
-				zIndex: el.zIndex
-			)
-		}
+        let inputs = store.elements.map { el in
+            CanvasElementInput(
+                sourceURL: el.sourceURL,
+                mediaType: el.mediaType,
+                displaySize: el.displaySize,
+                duration: el.duration,
+                position: el.position,
+                effectiveSize: el.effectiveSize,
+                cropRect: el.cropRect,
+                volume: el.volume,
+                zIndex: el.zIndex
+            )
+        }
 
-		let folder = store.outputFolder ?? FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
-		let name = store.outputFileName.isEmpty ? "canvas_composition.mp4" : store.outputFileName
-		let outputURL = folder.appendingPathComponent(name)
+        // Resolve the output folder from bookmark or use the stored URL if valid
+        var outputFolder: URL? = store.outputFolder
+        if outputFolder == nil {
+            // Try to resolve from bookmark
+            outputFolder = await SecurityBookmarkStore.shared.resolveBookmark(key: "SpatialCanvasOutputFolder")
+            // Update the stored URL if we successfully resolved from bookmark
+            if let resolvedURL = outputFolder {
+                store.outputFolder = resolvedURL
+            }
+        }
+        
+        // If still no output folder, show error and return
+        guard let folder = outputFolder else {
+            store.errorMessage = "请先选择输出目录"
+            return
+        }
+        
+        let name = store.outputFileName.isEmpty ? "canvas_composition.mp4" : store.outputFileName
+        let outputURL = folder.appendingPathComponent(name)
 
-		// 检查文件是否已存在
-		if FileManager.default.fileExists(atPath: outputURL.path) {
-			store.errorMessage = "文件已存在，请更改文件名或选择其他目录"
-			return
-		}
+        // 检查文件是否已存在
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            store.errorMessage = "文件已存在，请更改文件名或选择其他目录"
+            return
+        }
 
-		do {
-			try await SpatialCanvasToolkit.shared.exportCanvas(
-				inputs: inputs,
-				canvasSize: store.settings.canvasSize,
-				outputURL: outputURL
-			)
-			store.lastOutputURL = outputURL
-		} catch {
-			store.errorMessage = error.localizedDescription
-		}
-	}
+        // Start accessing the security-scoped resource
+        let started = SecurityBookmarkStore.shared.startAccessing(folder)
+        defer {
+            if started {
+                SecurityBookmarkStore.shared.stopAccessing(folder)
+            }
+        }
+
+        do {
+            try await SpatialCanvasToolkit.shared.exportCanvas(
+                inputs: inputs,
+                canvasSize: store.settings.canvasSize,
+                outputURL: outputURL
+            )
+            store.lastOutputURL = outputURL
+        } catch {
+            store.errorMessage = error.localizedDescription
+        }
+    }
 }
