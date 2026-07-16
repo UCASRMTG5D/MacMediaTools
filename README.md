@@ -192,8 +192,34 @@ MacMediaTools/
 
 **👉 https://github.com/UCASRMTG5D/MacMediaTools/releases**
 
-- 下载 `.dmg` / `.pkg` 后拖入「应用程序」即可使用
-- 安装包已用 **Developer ID 签名 + Apple 公证**，可直接打开，无 Gatekeeper 拦截
+- 下载 `.dmg` 后打开，把 `MacMediaTools` 拖入「应用程序」即可
 - 如需从源码自行编译，见上方「编译 / 运行」
 
 > 应用完全本地运行，无需账号、不联网。
+
+### 关于「无法打开」的提示（重要）
+
+当前版本**未经过 Apple 公证**（需付费开发者账号的 Developer ID 证书）。首次打开时 macOS 会拦截并提示：
+
+> 「MacMediaTools」已损坏，无法打开。 或 「MacMediaTools」无法被打开，因为 Apple 无法检查其是否含恶意软件。
+
+这是正常的 Gatekeeper 保护，**不是应用有问题**。按以下步骤即可打开（只需操作一次）：
+
+**方法一（推荐）：系统设置中允许**
+1. 双击 `.dmg` 里的 `MacMediaTools` 仍打不开时，先**关闭**该提示
+2. 打开 **系统设置 → 隐私与安全性**
+3. 在下方「安全性」区域会看到：`"MacMediaTools" 已被阻止使用`，点击 **「仍要打开」**
+4. 再次双击应用即可正常运行
+
+**方法二：右键打开**
+1. 在 Finder 中找到 `MacMediaTools.app`（或 `.dmg` 内的应用）
+2. **按住 Control 键单击**（或右键）→ 选择 **「打开」**
+3. 在弹出的确认框中点 **「打开」**，以后即可正常启动
+
+**方法三：终端放行（高级）**
+```bash
+sudo xattr -rd com.apple.quarantine /Applications/MacMediaTools.app
+```
+执行后无需右键，直接双击即可打开。
+
+> 说明：以上限制仅因未购买 Apple Developer Program（$99/年）的 Developer ID 证书。应用本身完全本地运行、不含任何网络或收集行为。未来若完成开发者认证，将发布经签名 + 公证的版本，届时无需以上步骤。
