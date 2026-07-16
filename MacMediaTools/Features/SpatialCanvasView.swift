@@ -33,6 +33,8 @@ final class CanvasStore: ObservableObject {
 
 	/// 添加媒体文件并创建画布元素
 	func addMedia(urls: [URL]) async {
+		let wasEmpty = elements.isEmpty
+
 		for url in urls {
 			let ext = url.pathExtension.lowercased()
 			let mediaType: CanvasMediaType
@@ -76,6 +78,18 @@ final class CanvasStore: ObservableObject {
 			)
 			elements.append(element)
 		}
+
+		// 首次导入素材时自动适配缩放比例，避免 100% 画布撑满视窗
+		if wasEmpty && !elements.isEmpty {
+			fitCanvasToViewportInternal(availableWidth: 600, availableHeight: 360)
+		}
+	}
+
+	/// 内部适配方法，根据可用视口尺寸计算合适的缩放比例
+	func fitCanvasToViewportInternal(availableWidth: CGFloat, availableHeight: CGFloat) {
+		let scaleW = availableWidth / settings.canvasSize.width
+		let scaleH = availableHeight / settings.canvasSize.height
+		canvasScale = max(0.1, min(5.0, min(scaleW, scaleH)))
 	}
 
 	private func randomCanvasPosition(displaySize: CGSize) -> CGPoint {
@@ -276,8 +290,34 @@ struct SpatialCanvasView: View {
 					.font(.caption)
 			}
 
-			// 画布预览区（ScrollView 支持缩放后滚动查看）
-			ScrollView([.horizontal, .vertical], showsIndicators: true) {
+			// 画布预览区
+			// 编辑模式（move/resize/crop）需要 DragGesture 不被 ScrollView 拦截 → 禁用内层滚动
+			// 无编辑操作时用 ScrollView 浏览画布
+			let needsDrag = editMode == .move || editMode == .resize || editMode == .crop
+
+			canvasContentView
+				.clipShape(RoundedRectangle(cornerRadius: 4))
+				.overlay(
+					RoundedRectangle(cornerRadius: 4)
+						.stroke(Color.secondary.opacity(0.3))
+				)
+				.frame(maxWidth: .infinity, minHeight: 300, maxHeight: 500)
+				.background(Color(NSColor.textBackgroundColor).opacity(0.05))
+		}
+	}
+
+	// MARK: - Canvas Content View
+
+	/// 画布 ZStack 内容，当需要编辑拖拽时不包裹 ScrollView（避免手势竞争）
+	@ViewBuilder
+	private var canvasContentView: some View {
+		let scaledW = canvasDisplaySize.width * store.canvasScale
+		let scaledH = canvasDisplaySize.height * store.canvasScale
+		let needsDrag = editMode == .move || editMode == .resize || editMode == .crop
+
+		Group {
+			if needsDrag {
+				// 编辑拖拽模式：不使用 ScrollView，让 DragGesture 自由工作
 				ZStack {
 					Rectangle()
 						.fill(Color.black)
@@ -292,7 +332,7 @@ struct SpatialCanvasView: View {
 						.onTapGesture {
 							store.selectedElementID = element.id
 						}
-						.gesture(editMode == .move ? dragGesture(for: element) : nil)
+						.highPriorityGesture(editMode == .move ? dragGesture(for: element) : nil)
 					}
 
 					if let el = store.selectedElement,
@@ -302,11 +342,11 @@ struct SpatialCanvasView: View {
 							element: Binding<CanvasElement>(
 								get: { store.elements[index] },
 								set: { store.elements[index] = $0 }
-							)
+							),
+							canvasScale: store.canvasScale
 						)
 					}
 
-					// 裁剪模式：在选中元素上叠加 CropOverlay
 					if editMode == .crop,
 					   let el = store.selectedElement,
 					   let index = store.elements.firstIndex(where: { $0.id == el.id }) {
@@ -329,24 +369,43 @@ struct SpatialCanvasView: View {
 						.allowsHitTesting(true)
 					}
 
-					}
+				}
 				.frame(width: scaledW, height: scaledH)
 				.coordinateSpace(name: "canvas")
-			}
-			.highPriorityGesture(
-				MagnificationGesture()
-					.onChanged { value in
-						let newScale = max(0.1, min(5.0, store.canvasScale * value))
-						store.canvasScale = newScale
+				.highPriorityGesture(
+					MagnificationGesture()
+						.onChanged { value in
+							store.canvasScale = max(0.1, min(5.0, store.canvasScale * value))
+						}
+				)
+			} else {
+				// 浏览模式：使用 ScrollView 双轴滚动查看大画布
+				ScrollView([.horizontal, .vertical], showsIndicators: true) {
+					ZStack {
+						Rectangle()
+							.fill(Color.black)
+							.frame(width: scaledW, height: scaledH)
+
+						ForEach(store.elements) { element in
+							CanvasElementView(
+								element: element,
+								isSelected: element.id == store.selectedElementID,
+								canvasScale: store.canvasScale
+							)
+							.onTapGesture {
+								store.selectedElementID = element.id
+							}
+						}
 					}
-			)
-			.clipShape(RoundedRectangle(cornerRadius: 4))
-			.overlay(
-				RoundedRectangle(cornerRadius: 4)
-					.stroke(Color.secondary.opacity(0.3))
-			)
-			.frame(maxWidth: .infinity, minHeight: 300, maxHeight: 500)
-			.background(Color(NSColor.textBackgroundColor).opacity(0.05))
+					.frame(width: scaledW, height: scaledH)
+				}
+				.highPriorityGesture(
+					MagnificationGesture()
+						.onChanged { value in
+							store.canvasScale = max(0.1, min(5.0, store.canvasScale * value))
+						}
+				)
+			}
 		}
 	}
 
@@ -355,9 +414,7 @@ struct SpatialCanvasView: View {
 	}
 
 	private func fitCanvasToViewport() {
-		let availableWidth: CGFloat = 700
-		let fitScale = availableWidth / canvasDisplaySize.width
-		store.canvasScale = max(0.1, min(5.0, fitScale))
+		store.fitCanvasToViewportInternal(availableWidth: 700, availableHeight: 400)
 	}
 
 	// MARK: - Drag Gesture

@@ -32,20 +32,21 @@ struct CropOverlay: View {
 					.path(in: rect)
 					.stroke(.yellow, lineWidth: 2)
 
+				// 角点 (放在拖动框之前，确保手势优先命中角点)
+				cornerHandle(at: rect.origin, in: size, mode: .topLeft)
+				cornerHandle(at: CGPoint(x: rect.maxX, y: rect.minY), in: size, mode: .topRight)
+				cornerHandle(at: CGPoint(x: rect.minX, y: rect.maxY), in: size, mode: .bottomLeft)
+				cornerHandle(at: CGPoint(x: rect.maxX, y: rect.maxY), in: size, mode: .bottomRight)
+
 				// 拖动整个框
 				Rectangle()
 					.fill(.clear)
 					.contentShape(Rectangle())
 					.frame(width: rect.width, height: rect.height)
 					.position(x: rect.midX, y: rect.midY)
-					.gesture(dragWhole(in: size))
-
-				// 角点
-				cornerHandle(at: rect.origin, in: size, mode: .topLeft)
-				cornerHandle(at: CGPoint(x: rect.maxX, y: rect.minY), in: size, mode: .topRight)
-				cornerHandle(at: CGPoint(x: rect.minX, y: rect.maxY), in: size, mode: .bottomLeft)
-				cornerHandle(at: CGPoint(x: rect.maxX, y: rect.maxY), in: size, mode: .bottomRight)
+					.highPriorityGesture(dragWhole(in: size))
 			}
+			.frame(maxWidth: .infinity, maxHeight: .infinity)
 		}
 	}
 
@@ -54,9 +55,9 @@ struct CropOverlay: View {
 	private func cornerHandle(at point: CGPoint, in containerSize: CGSize, mode: CornerMode) -> some View {
 		Circle()
 			.fill(.yellow)
-			.frame(width: 10, height: 10)
+			.frame(width: 12, height: 12)
+			.highPriorityGesture(dragCorner(in: containerSize, mode: mode))
 			.position(point)
-			.gesture(dragCorner(in: containerSize, mode: mode))
 	}
 
 	private func dragWhole(in containerSize: CGSize) -> some Gesture {

@@ -11,6 +11,7 @@ import SwiftUI
 /// - 垂直边手柄 → 纵向非等比拉伸（修改 element.nonUniformScale.height）
 struct CanvasResizeHandles: View {
 	@Binding var element: CanvasElement
+	let canvasScale: CGFloat
 
 	// MARK: - DragStartState
 
@@ -35,7 +36,7 @@ struct CanvasResizeHandles: View {
 			ForEach(HandlePosition.allCases, id: \.self) { handle in
 				handleView
 					.position(position(for: handle, in: frame))
-					.simultaneousGesture(resizeGesture(for: handle))
+					.highPriorityGesture(resizeGesture(for: handle))
 			}
 		}
 	}
@@ -43,16 +44,18 @@ struct CanvasResizeHandles: View {
 	// MARK: - Handle Position
 
 	/// 计算各手柄在手柄父视图（画布 ZStack）中的坐标
+	/// frame 是元素在逻辑画布坐标系中的位置，需要乘以 canvasScale 映射到缩放后的坐标空间
 	private func position(for handle: HandlePosition, in frame: CGRect) -> CGPoint {
+		let s = canvasScale
 		switch handle {
-		case .topLeft:		return frame.origin
-		case .top:			return CGPoint(x: frame.midX, y: frame.minY)
-		case .topRight:		return CGPoint(x: frame.maxX, y: frame.minY)
-		case .centerLeft:	return CGPoint(x: frame.minX, y: frame.midY)
-		case .centerRight:	return CGPoint(x: frame.maxX, y: frame.midY)
-		case .bottomLeft:	return CGPoint(x: frame.minX, y: frame.maxY)
-		case .bottom:		return CGPoint(x: frame.midX, y: frame.maxY)
-		case .bottomRight:	return CGPoint(x: frame.maxX, y: frame.maxY)
+		case .topLeft:		return CGPoint(x: frame.origin.x * s, y: frame.origin.y * s)
+		case .top:			return CGPoint(x: frame.midX * s, y: frame.minY * s)
+		case .topRight:		return CGPoint(x: frame.maxX * s, y: frame.minY * s)
+		case .centerLeft:	return CGPoint(x: frame.minX * s, y: frame.midY * s)
+		case .centerRight:	return CGPoint(x: frame.maxX * s, y: frame.midY * s)
+		case .bottomLeft:	return CGPoint(x: frame.minX * s, y: frame.maxY * s)
+		case .bottom:		return CGPoint(x: frame.midX * s, y: frame.maxY * s)
+		case .bottomRight:	return CGPoint(x: frame.maxX * s, y: frame.maxY * s)
 		}
 	}
 
@@ -106,6 +109,10 @@ struct CanvasResizeHandles: View {
 		let ds = element.displaySize
 		let minS = minElementSize
 
+		// 拖拽增量在缩放后的坐标空间中，需要反除 canvasScale 映射回逻辑坐标
+		let tx = translation.width / canvasScale
+		let ty = translation.height / canvasScale
+
 		// ---------------------------------------------------------------
 		// 角点 — 等比缩放
 		// ---------------------------------------------------------------
@@ -114,9 +121,9 @@ struct CanvasResizeHandles: View {
 			let newWidth: CGFloat = {
 				switch handle {
 				case .topLeft, .bottomLeft:
-					return max(start.size.width - translation.width, minS)
+					return max(start.size.width - tx, minS)
 				case .topRight, .bottomRight:
-					return max(start.size.width + translation.width, minS)
+					return max(start.size.width + tx, minS)
 				default:
 					return start.size.width
 				}
@@ -160,9 +167,9 @@ struct CanvasResizeHandles: View {
 			let newWidth: CGFloat = {
 				switch handle {
 				case .centerLeft:
-					return max(start.size.width - translation.width, minS)
+					return max(start.size.width - tx, minS)
 				case .centerRight:
-					return max(start.size.width + translation.width, minS)
+					return max(start.size.width + tx, minS)
 				default:
 					return start.size.width
 				}
@@ -187,9 +194,9 @@ struct CanvasResizeHandles: View {
 			let newHeight: CGFloat = {
 				switch handle {
 				case .top:
-					return max(start.size.height - translation.height, minS)
+					return max(start.size.height - ty, minS)
 				case .bottom:
-					return max(start.size.height + translation.height, minS)
+					return max(start.size.height + ty, minS)
 				default:
 					return start.size.height
 				}
