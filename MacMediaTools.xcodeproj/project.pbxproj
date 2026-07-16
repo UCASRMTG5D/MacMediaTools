@@ -55,6 +55,9 @@
 		AA0000000000000000000135 /* CanvasResizeHandles.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000228 /* CanvasResizeHandles.swift */; };
 		AA0000000000000000000136 /* SpatialCanvasService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000229 /* SpatialCanvasService.swift */; };
 		AA0000000000000000000137 /* SpatialCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000230 /* SpatialCanvasView.swift */; };
+		AA0000000000000000000138 /* MediaRepairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000231 /* MediaRepairView.swift */; };
+		AA0000000000000000000139 /* MediaRepairService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000232 /* MediaRepairService.swift */; };
+		AA0000000000000000000140 /* MediaRepairModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000233 /* MediaRepairModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -108,6 +111,9 @@
 		AA0000000000000000000228 /* CanvasResizeHandles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasResizeHandles.swift; sourceTree = "<group>"; };
 		AA0000000000000000000229 /* SpatialCanvasService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialCanvasService.swift; sourceTree = "<group>"; };
 		AA0000000000000000000230 /* SpatialCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialCanvasView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000231 /* MediaRepairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000232 /* MediaRepairService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairService.swift; sourceTree = "<group>"; };
+		AA0000000000000000000233 /* MediaRepairModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -207,8 +213,10 @@
 				AA0000000000000000000223 /* WorkManager.swift */,
 				AA0000000000000000000224 /* DuplicateVideoScanModel.swift */,
 				AA0000000000000000000229 /* SpatialCanvasService.swift */,
-			);
-			path = Services;
+			AA0000000000000000000232 /* MediaRepairService.swift */,
+			AA0000000000000000000233 /* MediaRepairModel.swift */,
+		);
+		path = Services;
 			sourceTree = "<group>";
 		};
 		AA000000000000000000005D /* Features */ = {
@@ -234,6 +242,7 @@
 				02BEB260C3573273D9070860 /* ResizeSettingsView.swift */,
 				F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */,
 				AA0000000000000000000230 /* SpatialCanvasView.swift */,
+				AA0000000000000000000231 /* MediaRepairView.swift */,
 			);
 			path = MacMediaTools/Features;
 			sourceTree = SOURCE_ROOT;
@@ -348,6 +357,9 @@
 				AA0000000000000000000135 /* CanvasResizeHandles.swift in Sources */,
 				AA0000000000000000000136 /* SpatialCanvasService.swift in Sources */,
 				AA0000000000000000000137 /* SpatialCanvasView.swift in Sources */,
+				AA0000000000000000000138 /* MediaRepairView.swift in Sources */,
+				AA0000000000000000000139 /* MediaRepairService.swift in Sources */,
+			AA0000000000000000000140 /* MediaRepairModel.swift in Sources */,
 				717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

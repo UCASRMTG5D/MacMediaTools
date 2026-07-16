@@ -8,6 +8,10 @@ struct RootView: View {
 	/// when the user switches to another feature and back.
 	@StateObject private var duplicateVideoScan = DuplicateVideoScanModel()
 
+	/// Lives here so MediaRepairView's detect/repair continues running
+	/// when the user switches to another feature and back.
+	@StateObject private var mediaRepair = MediaRepairModel()
+
 	var body: some View {
 		NavigationSplitView {
 			List(ToolFeature.allCases, id: \.self, selection: $selection) { item in
@@ -34,6 +38,8 @@ struct RootView: View {
 					FileCopyView()
 				case .spatialCanvas:
 					SpatialCanvasView()
+			case .mediaRepair:
+				MediaRepairView(mediaRepair: mediaRepair)
 				case nil:
 					WelcomeDefaultView()
 				}

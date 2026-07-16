@@ -113,6 +113,20 @@ private let helpFeatures: [HelpFeature] = [
 			"导出为 MP4 (H.264) 视频文件",
 		]
 	),
+	HelpFeature(
+		number: "9",
+		name: "媒体修复",
+		icon: "wrench.and.screwdriver",
+		summary: "检测并修复媒体文件的格式/标签问题：图片扩展名不符、视频不兼容 QuickTime。",
+		details: [
+			"检测阶段只读文件、不修改任何内容，结果按图片 / 视频两大类分组列出",
+			"图片扩展名不符：实际格式（如 WebP）与扩展名（如 .jpg）不一致导致 Preview 显示「已锁定」，修复为零画质损失重命名",
+			"视频不兼容 QuickTime：编码/封装（如 HEVC 在非常规容器、avi/mkv/flv 等）QuickTime 无法播放，修复为无损封装到 QuickTime 兼容 MP4（不转码，拷贝音视频流）",
+			"支持选择「全部 / 仅图片 / 仅视频」检测范围",
+			"勾选需要修复的项目后点击「开始修复」才会写盘，逐项确认、可全选/取消",
+			"支持选择文件或递归扫描整个文件夹",
+		]
+	),
 ]
 
 // MARK: - Environment / Build Info
