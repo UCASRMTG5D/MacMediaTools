@@ -5,6 +5,14 @@ import SwiftUI
 struct MediaRepairView: View {
 	@ObservedObject var mediaRepair: MediaRepairModel
 
+	/// 每页条目数（默认 10）
+	@State private var pageSize: Int = 10
+	/// 每页条目数编辑器临时文本
+	@State private var pageSizeText: String = "10"
+
+	/// 各分类当前页码 [categoryId: pageIndex]
+	@State private var categoryPages: [String: Int] = [:]
+
 	var body: some View {
 		ScrollView {
 			VStack(alignment: .leading, spacing: 14) {
@@ -16,12 +24,12 @@ struct MediaRepairView: View {
 					OpenPanelButton(title: "选择文件…", mode: .mediaFiles) { urls in
 						mediaRepair.selectFiles(urls)
 					}
-					.disabled(mediaRepair.isDetecting || mediaRepair.isRepairing)
+					.disabled(mediaRepair.isScanningFolder || mediaRepair.isDetecting || mediaRepair.isRepairing)
 					OpenPanelButton(title: "选择文件夹…", mode: .folder) { urls in
 						guard let folder = urls.first else { return }
 						mediaRepair.selectFolder(folder)
 					}
-					.disabled(mediaRepair.isDetecting || mediaRepair.isRepairing)
+					.disabled(mediaRepair.isScanningFolder || mediaRepair.isDetecting || mediaRepair.isRepairing)
 					Text(mediaRepair.selectedFiles.isEmpty ? "未选择" : "已选择 \(mediaRepair.selectedFiles.count) 个文件")
 						.lineLimit(1)
 						.truncationMode(.middle)
@@ -42,12 +50,15 @@ struct MediaRepairView: View {
 				}
 
 				HStack(spacing: 12) {
-					Button(mediaRepair.isDetecting ? "检测中…" : "开始检测") {
+					Button(
+						mediaRepair.isScanningFolder ? "准备中…" :
+						mediaRepair.isDetecting ? "检测中…" : "开始检测"
+					) {
 						mediaRepair.startDetection()
 					}
-					.disabled(mediaRepair.isDetecting || mediaRepair.isRepairing || mediaRepair.selectedFiles.isEmpty)
+					.disabled(mediaRepair.isScanningFolder || mediaRepair.isDetecting || mediaRepair.isRepairing || mediaRepair.selectedFiles.isEmpty)
 
-					if mediaRepair.isDetecting {
+					if mediaRepair.isScanningFolder || mediaRepair.isDetecting {
 						ProgressView()
 					}
 				}
@@ -56,6 +67,25 @@ struct MediaRepairView: View {
 					.foregroundStyle(.secondary)
 
 				if let result = mediaRepair.result {
+					// 每页条目数控制
+					HStack {
+						Text("每页条目数:")
+							.font(.caption)
+							.foregroundStyle(.secondary)
+						TextField("", text: $pageSizeText)
+							.frame(width: 50)
+							.textFieldStyle(.roundedBorder)
+							.onChange(of: pageSizeText) { newValue in
+								if let value = Int(newValue), value > 0 {
+									pageSize = value
+									// 重置所有分类页码，避免越界
+									categoryPages = categoryPages.mapValues { _ in 0 }
+								}
+							}
+						Spacer()
+					}
+					.padding(.vertical, 4)
+
 					resultSections(result)
 				}
 
@@ -125,54 +155,111 @@ struct MediaRepairView: View {
 	@ViewBuilder
 	private func categorySection(category: MediaRepairCategory, items: [MediaRepairItem]) -> some View {
 		let title = "\(category.rawValue)（\(items.count)）"
-		VStack(alignment: .leading, spacing: 8) {
+		let pageIndex = categoryPages[category.id] ?? 0
+		let totalPages = max(1, (items.count + pageSize - 1) / pageSize)
+		let pageStart = pageIndex * pageSize
+		let pageEnd = min(pageStart + pageSize, items.count)
+		let pageItems = items.isEmpty ? [] : Array(items[pageStart..<pageEnd])
+
+		DisclosureGroup(isExpanded: Binding(
+			get: { categoryPages[category.id] != nil },
+			set: { expanded in
+				if expanded {
+					categoryPages[category.id] = 0
+				} else {
+					categoryPages.removeValue(forKey: category.id)
+				}
+			}
+		)) {
+			VStack(alignment: .leading, spacing: 8) {
+				if items.isEmpty {
+					Text("未发现此类问题")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+						.padding(.leading, 4)
+				} else {
+					ForEach(pageItems) { item in
+						HStack(alignment: .top, spacing: 10) {
+							Toggle("", isOn: Binding(
+								get: { mediaRepair.checkedIDs.contains(item.id) },
+								set: { checked in
+									if checked { mediaRepair.checkedIDs.insert(item.id) }
+									else { mediaRepair.checkedIDs.remove(item.id) }
+								}
+							))
+							.labelsHidden()
+							VStack(alignment: .leading, spacing: 3) {
+								Text(item.url.lastPathComponent)
+									.font(.subheadline)
+								Text(item.currentLabel)
+									.font(.caption)
+									.foregroundStyle(.secondary)
+								Text(item.suggestedAction)
+									.font(.caption)
+									.foregroundStyle(.orange)
+							}
+							Spacer()
+							Button("在 Finder 中显示") {
+								NSWorkspace.shared.activateFileViewerSelecting([item.url])
+							}
+							.buttonStyle(.borderless)
+						}
+						.padding(8)
+						.background(Color.orange.opacity(0.08))
+						.cornerRadius(6)
+					}
+
+					// 分页控件
+					if totalPages > 1 {
+						Divider()
+						HStack {
+							Button("上一页") {
+								if pageIndex > 0 {
+									categoryPages[category.id] = pageIndex - 1
+								}
+							}
+							.disabled(pageIndex <= 0)
+							.buttonStyle(.borderless)
+
+							Text("第 \(pageIndex + 1) / \(totalPages) 页（共 \(items.count) 条）")
+								.font(.caption)
+								.foregroundStyle(.secondary)
+
+							Button("下一页") {
+								if pageIndex < totalPages - 1 {
+									categoryPages[category.id] = pageIndex + 1
+								}
+							}
+							.disabled(pageIndex >= totalPages - 1)
+							.buttonStyle(.borderless)
+
+							Spacer()
+
+							// 全选/取消全选（作用于当前页）
+							Button(mediaRepair.sectionAllChecked(items) ? "取消全选" : "全选") {
+								mediaRepair.toggleSection(items)
+							}
+							.buttonStyle(.borderless)
+						}
+					}
+				}
+			}
+			.padding(.top, 8)
+		} label: {
 			HStack {
+				Image(systemName: (categoryPages[category.id] != nil) ? "chevron.down" : "chevron.right")
+					.font(.caption)
+					.foregroundStyle(.secondary)
+					.frame(width: 16)
 				Text(title)
 					.font(.headline)
 				Spacer()
-				if !items.isEmpty {
+				// 折叠时也显示全选/取消全选
+				if !items.isEmpty && categoryPages[category.id] != nil {
 					Button(mediaRepair.sectionAllChecked(items) ? "取消全选" : "全选") {
 						mediaRepair.toggleSection(items)
 					}
 					.buttonStyle(.borderless)
-				}
-			}
-
-			if items.isEmpty {
-				Text("未发现此类问题")
-					.font(.caption)
-					.foregroundStyle(.secondary)
-					.padding(.leading, 4)
-			} else {
-				ForEach(items) { item in
-					HStack(alignment: .top, spacing: 10) {
-						Toggle("", isOn: Binding(
-							get: { mediaRepair.checkedIDs.contains(item.id) },
-							set: { checked in
-								if checked { mediaRepair.checkedIDs.insert(item.id) }
-								else { mediaRepair.checkedIDs.remove(item.id) }
-							}
-						))
-						.labelsHidden()
-						VStack(alignment: .leading, spacing: 3) {
-							Text(item.url.lastPathComponent)
-								.font(.subheadline)
-							Text(item.currentLabel)
-								.font(.caption)
-								.foregroundStyle(.secondary)
-							Text(item.suggestedAction)
-								.font(.caption)
-								.foregroundStyle(.orange)
-						}
-						Spacer()
-						Button("在 Finder 中显示") {
-							NSWorkspace.shared.activateFileViewerSelecting([item.url])
-						}
-						.buttonStyle(.borderless)
-					}
-					.padding(8)
-					.background(Color.orange.opacity(0.08))
-					.cornerRadius(6)
 				}
 			}
 		}

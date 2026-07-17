@@ -1,17 +1,21 @@
 import SwiftUI
+import AppKit
 
 struct RootView: View {
 	@State private var selection: ToolFeature? = nil
 	@Environment(\.openWindow) private var openWindow
-
+	
+	/// 保存在此以便切换到其他功能再回来时扫描继续运行
+	@StateObject private var duplicatePhotoScan = DuplicatePhotoScanModel()
+	
 	/// Lives here so DuplicateVideoView's scan continues running
 	/// when the user switches to another feature and back.
 	@StateObject private var duplicateVideoScan = DuplicateVideoScanModel()
-
+	
 	/// Lives here so MediaRepairView's detect/repair continues running
 	/// when the user switches to another feature and back.
 	@StateObject private var mediaRepair = MediaRepairModel()
-
+	
 	var body: some View {
 		NavigationSplitView {
 			List(ToolFeature.allCases, id: \.self, selection: $selection) { item in
@@ -31,15 +35,15 @@ struct RootView: View {
 				case .keyFrameExtract:
 					VideoScreenshotExtractorView()
 				case .duplicatePhotos:
-					DuplicatePhotoView()
+					DuplicatePhotoView(scanModel: duplicatePhotoScan)
 				case .duplicateVideos:
 					DuplicateVideoView(scanModel: duplicateVideoScan)
 				case .fileCopy:
 					FileCopyView()
 				case .spatialCanvas:
 					SpatialCanvasView()
-			case .mediaRepair:
-				MediaRepairView(mediaRepair: mediaRepair)
+				case .mediaRepair:
+					MediaRepairView(mediaRepair: mediaRepair)
 				case nil:
 					WelcomeDefaultView()
 				}

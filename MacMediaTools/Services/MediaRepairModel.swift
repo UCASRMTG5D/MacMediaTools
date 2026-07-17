@@ -12,6 +12,7 @@ final class MediaRepairModel: ObservableObject {
 	@Published var selectedFiles: [URL] = []
 	@Published var scope: MediaRepairScope = .all
 	@Published var isDetecting = false
+	@Published var isScanningFolder = false
 	@Published var isRepairing = false
 	@Published var result: MediaRepairResult?
 	@Published var checkedIDs: Set<MediaRepairItem.ID> = []
@@ -33,7 +34,7 @@ final class MediaRepairModel: ObservableObject {
 
 	func selectFolder(_ folder: URL) {
 		// 文件夹扫描放到后台，避免大目录阻塞主线程（导入阶段卡顿修复）
-		isDetecting = true
+		isScanningFolder = true
 		Task {
 			let scanned = await Task.detached(priority: .userInitiated) {
 				FolderScanner.scanFiles(in: folder, allowedExtensions: MediaFileExtensions.all)
@@ -41,7 +42,7 @@ final class MediaRepairModel: ObservableObject {
 			await MainActor.run {
 				selectedFiles = scanned
 				resetDetection()
-				isDetecting = false
+				isScanningFolder = false
 				log("已扫描文件夹，找到 \(scanned.count) 个媒体文件")
 			}
 		}

@@ -8,12 +8,21 @@
 
 /* Begin PBXBuildFile section */
 		14EC08122BDF8AC961024347 /* ThumbnailPreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81969E4C52AB1102DBC1A1E9 /* ThumbnailPreviewPanel.swift */; };
+		158144DE80F441764FEC2E21 /* AsyncAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27EB419B892AD854F4437207 /* AsyncAction.swift */; };
 		1BD3A00E2E0E8313F89267C2 /* KeyboardShortcutsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999837FEBF7F3C2671F458C0 /* KeyboardShortcutsModifier.swift */; };
 		278B558974432E0399340951 /* TrackRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */; };
 		2AB144B5C320FA623C975EA5 /* CropSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6194B9F0CD7D999A5178373F /* CropSettingsView.swift */; };
+		2C834BF9941D6090DDF589CD /* BaseObservableService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D6402A8FB1FA3DD3068246 /* BaseObservableService.swift */; };
+		30734BE9BBA44E79CC7C9B47 /* CommonComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB24FE885CF9D8390C690B0 /* CommonComponents.swift */; };
+		31E18638FA7043A98DE9489D /* MacMediaTools/Services/Infrastructure/ObservableService.swift in None */ = {isa = PBXBuildFile; fileRef = 0A227DC7D67247A5AE3C86C1 /* MacMediaTools/Services/Infrastructure/ObservableService.swift */; };
+		676421FE9687418F83457E20 /* MacMediaTools/Services/Infrastructure/FileOperations.swift in None */ = {isa = PBXBuildFile; fileRef = 0B042E3379A248198D702064 /* MacMediaTools/Services/Infrastructure/FileOperations.swift */; };
+		69934611BAD4AC8853A49371 /* FileOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638C494095D47F0FE4C1D00D /* FileOperations.swift */; };
 		717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */; };
+		7B2E4852A8115B9B20A1BEA0 /* ServiceProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81E04C88BBA4158AA5B80348 /* ServiceProtocols.swift */; };
+		934940B4BE42CB0BA0224DD3 /* StandardViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E5643549DD0895694A674F0 /* StandardViews.swift */; };
 		95773F51BD1B05D1D1ACBD45 /* FrameThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */; };
 		98737A7B28561321202875D4 /* ResizeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02BEB260C3573273D9070860 /* ResizeSettingsView.swift */; };
+		9B9C4509867AFF7A8B3B4772 /* DependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10ED46ADA08F82815A1F9906 /* DependencyContainer.swift */; };
 		AA0000000000000000000101 /* MacMediaToolsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000201 /* MacMediaToolsApp.swift */; };
 		AA0000000000000000000102 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000202 /* RootView.swift */; };
 		AA0000000000000000000103 /* ToolFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000203 /* ToolFeature.swift */; };
@@ -53,22 +62,40 @@
 		AA0000000000000000000137 /* SpatialCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000230 /* SpatialCanvasView.swift */; };
 		AA0000000000000000000138 /* MediaRepairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000231 /* MediaRepairView.swift */; };
 		AA0000000000000000000139 /* MediaRepairService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000232 /* MediaRepairService.swift */; };
+		AA000000000000000000013D /* SimilarPhotoClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000023D /* SimilarPhotoClusterer.swift */; };
+		AA000000000000000000013E /* DuplicatePhotoScanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000023E /* DuplicatePhotoScanModel.swift */; };
 		AA0000000000000000000140 /* MediaRepairModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000233 /* MediaRepairModel.swift */; };
 		AA0000000000000000000141 /* SecurityBookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000234 /* SecurityBookmarkStore.swift */; };
+		AA0000000000000000000142 /* PhotoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000240 /* PhotoComparisonPanel.swift */; };
 		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
 		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
+		D28BE064682E4655B115C0E8 /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift in None */ = {isa = PBXBuildFile; fileRef = 01C24CC3733B4CA2BA56949F /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift */; };
+		D3E2BB6E30294948AB5A4A0D /* MacMediaTools/Services/Infrastructure/DependencyContainer.swift in None */ = {isa = PBXBuildFile; fileRef = 71D119CC9A5A40EF81CEBAC0 /* MacMediaTools/Services/Infrastructure/DependencyContainer.swift */; };
 		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
 		EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8084873CD47F896F183A5556 /* AudioTimelineView.swift */; };
+		F8CF77569E4445B99B194638 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift in None */ = {isa = PBXBuildFile; fileRef = 4CDDF5C8ABA2466D92422336 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		01C24CC3733B4CA2BA56949F /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/BaseObservableService.swift; sourceTree = "<group>"; };
 		02BEB260C3573273D9070860 /* ResizeSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResizeSettingsView.swift; sourceTree = "<group>"; };
+		0A227DC7D67247A5AE3C86C1 /* MacMediaTools/Services/Infrastructure/ObservableService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/ObservableService.swift; sourceTree = "<group>"; };
+		0B042E3379A248198D702064 /* MacMediaTools/Services/Infrastructure/FileOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/FileOperations.swift; sourceTree = "<group>"; };
+		10ED46ADA08F82815A1F9906 /* DependencyContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DependencyContainer.swift; path = MacMediaTools/Services/Infrastructure/DependencyContainer.swift; sourceTree = SOURCE_ROOT; };
 		23EE24C38B34395DB6900278 /* TrackBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrackBarView.swift; sourceTree = "<group>"; };
+		27EB419B892AD854F4437207 /* AsyncAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AsyncAction.swift; path = MacMediaTools/Components/AsyncAction.swift; sourceTree = SOURCE_ROOT; };
+		2BB24FE885CF9D8390C690B0 /* CommonComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommonComponents.swift; path = MacMediaTools/Components/CommonComponents.swift; sourceTree = SOURCE_ROOT; };
 		313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
+		34D6402A8FB1FA3DD3068246 /* BaseObservableService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BaseObservableService.swift; path = MacMediaTools/Services/Infrastructure/BaseObservableService.swift; sourceTree = SOURCE_ROOT; };
+		3E5643549DD0895694A674F0 /* StandardViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StandardViews.swift; path = MacMediaTools/Components/StandardViews.swift; sourceTree = SOURCE_ROOT; };
 		4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrackRowView.swift; sourceTree = "<group>"; };
+		4CDDF5C8ABA2466D92422336 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/ServiceProtocols.swift; sourceTree = "<group>"; };
 		6194B9F0CD7D999A5178373F /* CropSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CropSettingsView.swift; sourceTree = "<group>"; };
+		638C494095D47F0FE4C1D00D /* FileOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FileOperations.swift; path = MacMediaTools/Services/Infrastructure/FileOperations.swift; sourceTree = SOURCE_ROOT; };
+		71D119CC9A5A40EF81CEBAC0 /* MacMediaTools/Services/Infrastructure/DependencyContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/DependencyContainer.swift; sourceTree = "<group>"; };
 		8084873CD47F896F183A5556 /* AudioTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioTimelineView.swift; sourceTree = "<group>"; };
 		81969E4C52AB1102DBC1A1E9 /* ThumbnailPreviewPanel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailPreviewPanel.swift; sourceTree = "<group>"; };
+		81E04C88BBA4158AA5B80348 /* ServiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ServiceProtocols.swift; path = MacMediaTools/Services/Infrastructure/ServiceProtocols.swift; sourceTree = SOURCE_ROOT; };
 		975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OutputSettingsView.swift; sourceTree = "<group>"; };
 		999837FEBF7F3C2671F458C0 /* KeyboardShortcutsModifier.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsModifier.swift; sourceTree = "<group>"; };
 		9BCF7477F98425D158F3C663 /* FrameThumbnail.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FrameThumbnail.swift; sourceTree = "<group>"; };
@@ -108,6 +135,9 @@
 		AA0000000000000000000232 /* MediaRepairService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairService.swift; sourceTree = "<group>"; };
 		AA0000000000000000000233 /* MediaRepairModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRepairModel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000234 /* SecurityBookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityBookmarkStore.swift; sourceTree = "<group>"; };
+		AA000000000000000000023D /* SimilarPhotoClusterer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimilarPhotoClusterer.swift; sourceTree = "<group>"; };
+		AA000000000000000000023E /* DuplicatePhotoScanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatePhotoScanModel.swift; sourceTree = "<group>"; };
+		AA0000000000000000000240 /* PhotoComparisonPanel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoComparisonPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -140,6 +170,13 @@
 				AA0000000000000000000012 /* MacMediaTools */,
 				AA0000000000000000000013 /* Frameworks */,
 				AA0000000000000000000011 /* Products */,
+				3E5643549DD0895694A674F0 /* StandardViews.swift */,
+				2BB24FE885CF9D8390C690B0 /* CommonComponents.swift */,
+				27EB419B892AD854F4437207 /* AsyncAction.swift */,
+				34D6402A8FB1FA3DD3068246 /* BaseObservableService.swift */,
+				81E04C88BBA4158AA5B80348 /* ServiceProtocols.swift */,
+				10ED46ADA08F82815A1F9906 /* DependencyContainer.swift */,
+				638C494095D47F0FE4C1D00D /* FileOperations.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -195,6 +232,7 @@
 				AA0000000000000000000204 /* OpenPanelButton.swift */,
 				AA0000000000000000000218 /* VideoProgressSlider.swift */,
 				AA0000000000000000000222 /* VideoComparisonPanel.swift */,
+				AA0000000000000000000240 /* PhotoComparisonPanel.swift */,
 				AA0000000000000000000227 /* CanvasElementView.swift */,
 				AA0000000000000000000228 /* CanvasResizeHandles.swift */,
 			);
@@ -212,12 +250,19 @@
 				AA0000000000000000000217 /* OperationLogManager.swift */,
 				AA0000000000000000000220 /* VideoHashCache.swift */,
 				AA0000000000000000000221 /* SimilarVideoClusterer.swift */,
+				AA000000000000000000023D /* SimilarPhotoClusterer.swift */,
 				AA0000000000000000000223 /* WorkManager.swift */,
 				AA0000000000000000000224 /* DuplicateVideoScanModel.swift */,
+				AA000000000000000000023E /* DuplicatePhotoScanModel.swift */,
 				AA0000000000000000000229 /* SpatialCanvasService.swift */,
 				AA0000000000000000000232 /* MediaRepairService.swift */,
 				AA0000000000000000000233 /* MediaRepairModel.swift */,
-			AA0000000000000000000234 /* SecurityBookmarkStore.swift */,
+				AA0000000000000000000234 /* SecurityBookmarkStore.swift */,
+				01C24CC3733B4CA2BA56949F /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift */,
+				0A227DC7D67247A5AE3C86C1 /* MacMediaTools/Services/Infrastructure/ObservableService.swift */,
+				4CDDF5C8ABA2466D92422336 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift */,
+				71D119CC9A5A40EF81CEBAC0 /* MacMediaTools/Services/Infrastructure/DependencyContainer.swift */,
+				0B042E3379A248198D702064 /* MacMediaTools/Services/Infrastructure/FileOperations.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -340,9 +385,11 @@
 				AA0000000000000000000119 /* OperationLogManager.swift in Sources */,
 				AA0000000000000000000126 /* MediaToolsUtilities.swift in Sources */,
 				AA0000000000000000000127 /* VideoHashCache.swift in Sources */,
+				AA000000000000000000013D /* SimilarPhotoClusterer.swift in Sources */,
 				AA0000000000000000000128 /* SimilarVideoClusterer.swift in Sources */,
 				AA0000000000000000000130 /* WorkManager.swift in Sources */,
 				AA0000000000000000000129 /* VideoComparisonPanel.swift in Sources */,
+				AA000000000000000000013E /* DuplicatePhotoScanModel.swift in Sources */,
 				AA0000000000000000000131 /* DuplicateVideoScanModel.swift in Sources */,
 				278B558974432E0399340951 /* TrackRowView.swift in Sources */,
 				EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */,
@@ -363,8 +410,16 @@
 				AA0000000000000000000138 /* MediaRepairView.swift in Sources */,
 				AA0000000000000000000139 /* MediaRepairService.swift in Sources */,
 				AA0000000000000000000140 /* MediaRepairModel.swift in Sources */,
-			AA0000000000000000000141 /* SecurityBookmarkStore.swift in Sources */,
+				AA0000000000000000000141 /* SecurityBookmarkStore.swift in Sources */,
 				717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */,
+				AA0000000000000000000142 /* PhotoComparisonPanel.swift in Sources */,
+				934940B4BE42CB0BA0224DD3 /* StandardViews.swift in Sources */,
+				30734BE9BBA44E79CC7C9B47 /* CommonComponents.swift in Sources */,
+				158144DE80F441764FEC2E21 /* AsyncAction.swift in Sources */,
+				2C834BF9941D6090DDF589CD /* BaseObservableService.swift in Sources */,
+				7B2E4852A8115B9B20A1BEA0 /* ServiceProtocols.swift in Sources */,
+				9B9C4509867AFF7A8B3B4772 /* DependencyContainer.swift in Sources */,
+				69934611BAD4AC8853A49371 /* FileOperations.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

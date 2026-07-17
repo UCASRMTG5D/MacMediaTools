@@ -1,6 +1,6 @@
 import Foundation
 
-enum ToolFeature: String, CaseIterable, Identifiable {
+public enum ToolFeature: String, CaseIterable, Identifiable, Sendable {
 	// 视频编辑
 	case videoCropResize = "宽高调整"
 	case videoConcat = "视频片段整合"
@@ -15,7 +15,6 @@ enum ToolFeature: String, CaseIterable, Identifiable {
 	case fileCopy = "文件复制工具"
 	// 修复工具
 	case mediaRepair = "媒体修复"
-
-	var id: String { rawValue }
+	
+	public var id: String { rawValue }
 }
-

@@ -123,6 +123,12 @@ actor MyService {
 @StateObject private var scanModel = DuplicateVideoScanModel()
 ```
 
+- 文件夹读取（`FolderScanner.scanFiles`）等耗时操作**禁止在主线程执行**，必须用 `Task.detached(priority: .userInitiated)` 放到后台线程，避免 UI 卡顿：
+  ```swift
+  let files = await Task.detached(priority: .userInitiated) {
+      FolderScanner.scanFiles(in: folder, allowedExtensions: exts)
+  }.value
+  ```
 - 长耗时操作（视频处理、文件扫描）使用 `TaskGroup` 并行化
 - 跨功能共享状态（如扫描进度）由 RootView 持有 `@StateObject`，子视图通过 init 参数接收
 

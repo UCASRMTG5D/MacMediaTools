@@ -1,9 +1,10 @@
 import AVFoundation
 import AppKit
+import Accelerate
 import Foundation
 import ImageIO
 
-// MARK: - dHash Per-frame Fingerprint
+// MARK: - dHash & pHash Per-frame Fingerprint
 
 enum VideoHashCache {
 
@@ -24,6 +25,9 @@ enum VideoHashCache {
 		let frameRate: Double
 		let creationDate: TimeInterval
 		let segmentHashes: [UInt64]
+		let photoPHashes: [UInt64]?
+		/// 照片专用 dHash（差分哈希），用于与 pHash 融合判定相似，降低统一水印导致的误判
+		let photoDHash: UInt64?
 	}
 
 	struct ExtractedHashes: Sendable {
@@ -36,6 +40,9 @@ enum VideoHashCache {
 		let frameRate: Double
 		let creationDate: TimeInterval
 		let segmentHashes: [UInt64]
+		let photoPHashes: [UInt64]
+		/// 照片专用 dHash（差分哈希）
+		let photoDHash: UInt64
 	}
 
 	enum Error: Swift.Error, LocalizedError {
@@ -61,6 +68,8 @@ enum VideoHashCache {
 
 	/// Fraction of the frame to keep centered (0.0–1.0); discarding edges reduces watermark influence.
 	private static let centerCropFraction: CGFloat = 0.70
+	/// Fraction of the frame to keep centered for photos (0.0–1.0); higher value keeps more center for photos.
+	private static let photoCenterCropFraction: CGFloat = 0.90
 
 	/// dHash output size: width+1 × height = 9×8 → 64 bits.
 	private static let hashWidth = 9
@@ -75,7 +84,7 @@ enum VideoHashCache {
 
 	/// Compute a 64-bit difference hash for a CGImage.
 	/// 1. Center-crop to `centerCropFraction` to reduce watermark impact.
-	/// 2. Resize to (hashWidth+1)×hashHeight = 9×8 grayscale.
+	/// 2. Resize to (hashWidth+1)×hashHeight = 9×8, use known-compatible RGBA context, then convert to grayscale.
 	/// 3. Compare horizontal neighbours: pixel[x] > pixel[x+1] → set bit.
 	static func computeDHash(from image: CGImage) -> UInt64 {
 		let w = image.width
@@ -91,32 +100,43 @@ enum VideoHashCache {
 		).integral
 		let cropped = image.cropping(to: cropRect) ?? image
 
-		// 2. Resize to 9×8 grayscale via CGContext
+		// 2. Resize to 9×8 via known-compatible RGBA context, then convert to grayscale
 		let cw = hashWidth    // 9
 		let ch = hashHeight   // 8
+		let bytesPerPixel = 4
+		let bmpInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
 		guard let ctx = CGContext(
 			data: nil,
 			width: cw,
 			height: ch,
 			bitsPerComponent: 8,
-			bytesPerRow: cw,
-			space: CGColorSpaceCreateDeviceGray(),
-			bitmapInfo: CGImageAlphaInfo.none.rawValue
+			bytesPerRow: cw * bytesPerPixel,
+			space: CGColorSpaceCreateDeviceRGB(),
+			bitmapInfo: bmpInfo.rawValue
 		) else {
 			return 0
 		}
-		ctx.interpolationQuality = .high
+		ctx.interpolationQuality = CGInterpolationQuality.high
 		ctx.draw(cropped, in: CGRect(x: 0, y: 0, width: cw, height: ch))
 
 		guard let pixels = ctx.data else { return 0 }
-		let buf = pixels.bindMemory(to: UInt8.self, capacity: cw * ch)
+		let rgba = pixels.bindMemory(to: UInt8.self, capacity: cw * ch * bytesPerPixel)
+
+		var gray = [UInt8](repeating: 0, count: cw * ch)
+		for i in 0..<(cw * ch) {
+			let offset = i * bytesPerPixel
+			let r = Float(rgba[offset])
+			let g = Float(rgba[offset + 1])
+			let b = Float(rgba[offset + 2])
+			gray[i] = UInt8(0.299 * r + 0.587 * g + 0.114 * b)
+		}
 
 		// 3. Compute horizontal differences → 8×8 = 64 bits
 		var hash: UInt64 = 0
 		for row in 0..<ch {
 			for col in 0..<(cw - 1) {
-				let left = buf[row * cw + col]
-				let right = buf[row * cw + col + 1]
+				let left = gray[row * cw + col]
+				let right = gray[row * cw + col + 1]
 				if left > right {
 					let bitIdx = row * (cw - 1) + col
 					hash |= (1 << UInt64(bitIdx))
@@ -124,6 +144,319 @@ enum VideoHashCache {
 			}
 		}
 		return hash
+	}
+
+/// Compute a 64-bit difference hash for a CGImage using the photo-specific center crop fraction.
+/// 1. Center-crop to `photoCenterCropFraction` to reduce watermark impact.
+/// 2. Resize to (hashWidth+1)×hashHeight = 9×8 via known-compatible RGBA context, then grayscale.
+/// 3. Compare horizontal neighbours: pixel[x] > pixel[x+1] → set bit.
+	static func computePhotoDHash(from image: CGImage) -> UInt64 {
+		let w = image.width
+		let h = image.height
+
+		// 1. Center crop
+		let cropSide = min(CGFloat(w), CGFloat(h)) * photoCenterCropFraction
+		let cropRect = CGRect(
+			x: (CGFloat(w) - cropSide) / 2,
+			y: (CGFloat(h) - cropSide) / 2,
+			width: cropSide,
+			height: cropSide
+		).integral
+		let cropped = image.cropping(to: cropRect) ?? image
+
+		// 2. Resize to 9×8 via known-compatible RGBA context, then convert to grayscale
+		let cw = hashWidth    // 9
+		let ch = hashHeight   // 8
+		let bytesPerPixel = 4
+		let bmpInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+		guard let ctx = CGContext(
+			data: nil,
+			width: cw,
+			height: ch,
+			bitsPerComponent: 8,
+			bytesPerRow: cw * bytesPerPixel,
+			space: CGColorSpaceCreateDeviceRGB(),
+			bitmapInfo: bmpInfo.rawValue
+		) else {
+			return 0
+		}
+		ctx.interpolationQuality = CGInterpolationQuality.high
+		ctx.draw(cropped, in: CGRect(x: 0, y: 0, width: cw, height: ch))
+
+		guard let pixels = ctx.data else { return 0 }
+		let rgba = pixels.bindMemory(to: UInt8.self, capacity: cw * ch * bytesPerPixel)
+
+		var gray = [UInt8](repeating: 0, count: cw * ch)
+		for i in 0..<(cw * ch) {
+			let offset = i * bytesPerPixel
+			let r = Float(rgba[offset])
+			let g = Float(rgba[offset + 1])
+			let b = Float(rgba[offset + 2])
+			gray[i] = UInt8(0.299 * r + 0.587 * g + 0.114 * b)
+		}
+
+		// 3. Compute horizontal differences → 8×8 = 64 bits
+		var hash: UInt64 = 0
+		for row in 0..<ch {
+			for col in 0..<(cw - 1) {
+				let left = gray[row * cw + col]
+				let right = gray[row * cw + col + 1]
+				if left > right {
+					let bitIdx = row * (cw - 1) + col
+					hash |= (1 << UInt64(bitIdx))
+				}
+			}
+		}
+		return hash
+	}
+
+	// MARK: - pHash (Perceptual Hash using DCT)
+
+	/// pHash output size: 32×32 resize → 8×8 DCT coefficients → 64 bits
+	private static let pHashSize = 32
+	private static let pHashLowFreqSize = 8
+
+	/// Compute a 64-bit perceptual hash (pHash) using DCT.
+	/// 1. Center-crop to square
+	/// 2. Resize to 32×32 via known-compatible RGBA context, then convert to grayscale
+	/// 3. Apply 2D DCT
+	/// 4. Take top-left 8×8 low-frequency coefficients (excluding DC)
+	/// 5. Compute median, set bits where coefficient > median
+	static func computePHash(from image: CGImage) -> UInt64 {
+		let w = image.width
+		let h = image.height
+
+		// Center crop to square
+		let cropSide = min(CGFloat(w), CGFloat(h)) * photoCenterCropFraction
+		let cropRect = CGRect(
+			x: (CGFloat(w) - cropSide) / 2,
+			y: (CGFloat(h) - cropSide) / 2,
+			width: cropSide,
+			height: cropSide
+		).integral
+		let cropped = image.cropping(to: cropRect) ?? image
+
+		// Resize to 32×32 via known-compatible RGBA context
+		let cw = pHashSize
+		let ch = pHashSize
+		let bytesPerPixel = 4
+		let bmpInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+		guard let ctx = CGContext(
+			data: nil,
+			width: cw,
+			height: ch,
+			bitsPerComponent: 8,
+			bytesPerRow: cw * bytesPerPixel,
+			space: CGColorSpaceCreateDeviceRGB(),
+			bitmapInfo: bmpInfo.rawValue
+		) else {
+			return 0
+		}
+		ctx.interpolationQuality = CGInterpolationQuality.high
+		ctx.draw(cropped, in: CGRect(x: 0, y: 0, width: cw, height: ch))
+
+		guard let pixels = ctx.data else { return 0 }
+		let rgba = pixels.bindMemory(to: UInt8.self, capacity: cw * ch * bytesPerPixel)
+
+		var floatPixels = [Float](repeating: 0, count: cw * ch)
+		for i in 0..<(cw * ch) {
+			let offset = i * bytesPerPixel
+			let r = Float(rgba[offset])
+			let g = Float(rgba[offset + 1])
+			let b = Float(rgba[offset + 2])
+			floatPixels[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+		}
+
+		// Apply 2D DCT using vDSP
+		var dctCoeffs = [Float](repeating: 0, count: cw * ch)
+		dct2D(input: &floatPixels, output: &dctCoeffs, width: cw, height: ch)
+
+		// Extract top-left 8×8 low-frequency coefficients (skip DC at [0,0])
+		var lowFreqCoeffs = [Float]()
+		lowFreqCoeffs.reserveCapacity(pHashLowFreqSize * pHashLowFreqSize - 1)
+		for row in 0..<pHashLowFreqSize {
+			for col in 0..<pHashLowFreqSize {
+				if row == 0 && col == 0 { continue }
+				lowFreqCoeffs.append(dctCoeffs[row * cw + col])
+			}
+		}
+
+		// Compute median and generate 64-bit hash
+		let sorted = lowFreqCoeffs.sorted()
+		let median = sorted[sorted.count / 2]
+
+		var hash: UInt64 = 0
+		for (idx, coeff) in lowFreqCoeffs.enumerated() {
+			if coeff > median {
+				hash |= (1 << UInt64(idx))
+			}
+		}
+		return hash
+	}
+
+	/// 2D DCT using vDSP (separable: DCT on rows, then on columns)
+	private static func dct2D(input: inout [Float], output: inout [Float], width: Int, height: Int) {
+		var temp = [Float](repeating: 0, count: width * height)
+		let setup = vDSP_DCT_CreateSetup(nil, vDSP_Length(width), vDSP_DCT_Type.II)!
+
+		for row in 0..<height {
+			let rowStart = row * width
+			vDSP_DCT_Execute(setup, &input[rowStart], &temp[rowStart])
+		}
+
+		vDSP_mtrans(temp, 1, &output, 1, vDSP_Length(width), vDSP_Length(height))
+
+		for row in 0..<width {
+			let rowStart = row * height
+			vDSP_DCT_Execute(setup, &output[rowStart], &temp[rowStart])
+		}
+
+		vDSP_mtrans(temp, 1, &output, 1, vDSP_Length(height), vDSP_Length(width))
+	}
+
+	// MARK: - Photo Hash Extraction
+
+	/// 提取单张照片的 dHash 指纹
+	/// 返回 nil 表示文件无法读取（无效图片/不存在）
+	static func extractPhotoHash(url: URL) async -> ExtractedHashes? {
+		guard let attr = try? FileManager.default.attributesOfItem(atPath: url.path) else { return nil }
+		let fileSize = (attr[.size] as? NSNumber)?.uint64Value ?? 0
+		let modDate = (attr[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+		let createDate = (attr[.creationDate] as? Date)?.timeIntervalSince1970 ?? 0
+
+		guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+		guard let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+
+		let w: Double
+		let h: Double
+		if let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
+			w = props[kCGImagePropertyPixelWidth as String] as? Double ?? 0
+			h = props[kCGImagePropertyPixelHeight as String] as? Double ?? 0
+		} else {
+			w = 0; h = 0
+		}
+
+		let dHash = computePhotoDHash(from: cgImage)
+		let pHash = computePHash(from: cgImage)
+
+		return ExtractedHashes(
+			url: url,
+			fileSize: fileSize,
+			modificationDate: modDate,
+			durationSeconds: 0,
+			resolution: CGSize(width: w, height: h),
+			bitrate: 0,
+			frameRate: 0,
+			creationDate: createDate,
+			segmentHashes: [],
+			photoPHashes: [pHash],
+			photoDHash: dHash
+		)
+	}
+
+	// MARK: - Photo Cache Build/Update
+
+	/// 批量提取照片 dHash 指纹，复用/更新缓存
+	/// - `photos`: 所有照片 URL
+	/// - `cacheDir`: 分片缓存文件 (.json) 所在目录
+	/// - `sampleFraction`: < 1.0 时随机采样（调试模式）
+	/// - `skipCacheSave`: true 时不持久化缓存（调试模式）
+	/// - `progress`: 回调 (已处理, 总数, 阶段描述)
+	/// - Returns: (cacheData, extractedResults)
+	static func buildOrUpdatePhotoCache(
+		photos: [URL],
+		cacheDir: URL,
+		sampleFraction: Double = 1.0,
+		skipCacheSave: Bool = false,
+		progress: ((Int, Int, String) -> Void)? = nil
+	) async throws -> (CacheData, [ExtractedHashes]) {
+		var cache = loadCache(from: cacheDir)
+
+		let workingSet: [URL]
+		if sampleFraction >= 1.0 {
+			workingSet = photos
+		} else {
+			workingSet = Array(photos.shuffled().prefix(max(1, Int(Double(photos.count) * sampleFraction))))
+		}
+
+		let total = workingSet.count
+		let validURLs = Set(photos.map { $0.path })
+
+		// 移除已删除文件的过期条目
+		for key in cache.entries.keys {
+			if !validURLs.contains(key) {
+				cache.entries.removeValue(forKey: key)
+			}
+		}
+
+		var results: [ExtractedHashes] = []
+		results.reserveCapacity(workingSet.count)
+
+		let batchSize = 8
+		var processedCount = 0
+
+		for batchStart in stride(from: 0, to: workingSet.count, by: batchSize) {
+			let batchEnd = min(batchStart + batchSize, workingSet.count)
+			let batch = Array(workingSet[batchStart..<batchEnd])
+
+			let batchResults = await withTaskGroup(of: ExtractedHashes?.self) { group in
+				for url in batch {
+					group.addTask {
+						if let entry = cache.entries[url.path], !isEntryStale(entry: entry, for: url) {
+						return ExtractedHashes(
+							url: url,
+							fileSize: entry.fileSize,
+							modificationDate: entry.modificationDate,
+							durationSeconds: entry.durationSeconds,
+							resolution: CGSize(width: entry.resolutionWidth, height: entry.resolutionHeight),
+							bitrate: entry.bitrate,
+							frameRate: entry.frameRate,
+							creationDate: entry.creationDate,
+							segmentHashes: entry.segmentHashes,
+							photoPHashes: entry.photoPHashes ?? [],
+							photoDHash: entry.photoDHash ?? 0
+						)
+						}
+						return await extractPhotoHash(url: url)
+					}
+				}
+
+				var collected: [ExtractedHashes] = []
+				for await result in group {
+					if let r = result {
+						collected.append(r)
+					}
+				}
+				return collected
+			}
+
+			for r in batchResults {
+				results.append(r)
+				cache.entries[r.url.path] = Entry(
+					fileSize: r.fileSize,
+					modificationDate: r.modificationDate,
+					durationSeconds: r.durationSeconds,
+					resolutionWidth: r.resolution.width,
+					resolutionHeight: r.resolution.height,
+					bitrate: r.bitrate,
+					frameRate: r.frameRate,
+					creationDate: r.creationDate,
+					segmentHashes: r.segmentHashes,
+					photoPHashes: r.photoPHashes,
+					photoDHash: r.photoDHash
+				)
+			}
+
+			processedCount += batch.count
+			progress?(processedCount, total, "照片哈希提取: \(processedCount)/\(total)")
+
+			if !skipCacheSave {
+				try saveCache(cache, to: cacheDir)
+			}
+		}
+
+		progress?(total, total, "照片哈希缓存完成")
+		return (cache, results)
 	}
 
 	/// Hamming distance (popcount) between two 64-bit hashes.
@@ -279,7 +612,9 @@ enum VideoHashCache {
 			bitrate: Double(estimatedBitrate ?? 0),
 			frameRate: Double(nominalFrameRate ?? 0),
 			creationDate: createDate,
-			segmentHashes: hashes
+			segmentHashes: hashes,
+			photoPHashes: [],
+			photoDHash: 0
 		)
 	}
 
@@ -355,7 +690,9 @@ enum VideoHashCache {
 			bitrate: 0,
 			frameRate: 0,
 			creationDate: createDate,
-			segmentHashes: hashes
+			segmentHashes: hashes,
+			photoPHashes: [],
+			photoDHash: 0
 		)
 	}
 
@@ -420,7 +757,9 @@ enum VideoHashCache {
 								bitrate: entry.bitrate,
 								frameRate: entry.frameRate,
 								creationDate: entry.creationDate,
-								segmentHashes: entry.segmentHashes
+								segmentHashes: entry.segmentHashes,
+								photoPHashes: entry.photoPHashes ?? [],
+								photoDHash: entry.photoDHash ?? 0
 							)
 						}
 						// Extract fresh
@@ -448,8 +787,10 @@ enum VideoHashCache {
 					bitrate: r.bitrate,
 					frameRate: r.frameRate,
 					creationDate: r.creationDate,
-					segmentHashes: r.segmentHashes
-				)
+				segmentHashes: r.segmentHashes,
+				photoPHashes: r.photoPHashes,
+				photoDHash: r.photoDHash
+			)
 			}
 
 			processedCount += batch.count

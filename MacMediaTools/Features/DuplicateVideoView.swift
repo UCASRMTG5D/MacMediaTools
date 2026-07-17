@@ -107,9 +107,11 @@ struct DuplicateVideoView: View {
 
 			if scanModel.isWorking {
 				ProgressView()
-				Text("\(scanModel.processedCount)/\(scanModel.totalCount)")
-					.monospacedDigit()
-					.foregroundStyle(.secondary)
+				if scanModel.detectionMode == .quick {
+					Text("\(scanModel.processedCount)/\(scanModel.totalCount)")
+						.monospacedDigit()
+						.foregroundStyle(.secondary)
+				}
 			}
 		}
 	}
