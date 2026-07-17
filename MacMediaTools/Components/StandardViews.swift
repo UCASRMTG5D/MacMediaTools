@@ -1,6 +1,10 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+// ⚠️ 备用模板（未接入）：本文件定义的标准 UI 组件当前**没有任何 Feature View 调用**，属于「地基先行」的储备件。
+// 现有功能页是逐步长出来的，统一模板需逐个页面迁移才启用。启用前务必按 AGENTS.md 最新布局规范与当前 SwiftUI 习惯复审，
+// 不要假设这些组件与现有页面完全一致——长期零使用可能与实际业务脱节。
+
 // MARK: - 统一布局模板
 
 /// 所有 Feature View 的标准容器
