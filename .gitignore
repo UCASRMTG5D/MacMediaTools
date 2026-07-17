@@ -16,3 +16,6 @@ bug-reports/
 # 自动生成的开发文档
 PROJECT_INTRODUCTION.md
 oh-my-openagent-*.md
+
+# 本地架构笔记（不纳入版本控制）
+doc/

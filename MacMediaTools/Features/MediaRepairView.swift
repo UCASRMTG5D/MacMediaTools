@@ -4,6 +4,8 @@ import SwiftUI
 
 struct MediaRepairView: View {
 	@ObservedObject var mediaRepair: MediaRepairModel
+	/// 订阅共享日志，日志更新时自动刷新 UI
+	@ObservedObject private var logManager = OperationLogManager.shared
 
 	/// 每页条目数（默认 10）
 	@State private var pageSize: Int = 10
@@ -98,26 +100,31 @@ struct MediaRepairView: View {
 
 				if mediaRepair.isRepairing {
 					HStack(spacing: 12) {
-						ProgressView(value: mediaRepair.repairProgress)
+						ProgressView(value: mediaRepair.progress.fraction)
 							.frame(maxWidth: 200)
-						Text("\(Int(mediaRepair.repairProgress * 100))%")
+						Text("\(Int(mediaRepair.progress.fraction * 100))%")
 							.monospacedDigit()
 							.foregroundStyle(.secondary)
 					}
-					if !mediaRepair.currentFileName.isEmpty {
-						Text("正在修复: \(mediaRepair.currentFileName)")
+					if !mediaRepair.progress.message.isEmpty {
+						Text("正在修复: \(mediaRepair.progress.message)")
 							.foregroundStyle(.secondary)
 					}
 				}
 
-				if !mediaRepair.logText.isEmpty {
+				let logs = OperationLogManager.shared.logs.prefix(50)
+				if !logs.isEmpty {
 					VStack(alignment: .leading, spacing: 4) {
 						Text("操作日志")
 							.font(.headline)
 						ScrollView {
-							Text(mediaRepair.logText)
-								.font(.system(.caption, design: .monospaced))
-								.foregroundStyle(.secondary)
+							VStack(alignment: .leading, spacing: 2) {
+								ForEach(logs) { entry in
+									Text("[\(Self.timeString(entry.timestamp))] \(entry.message)")
+										.font(.system(.caption, design: .monospaced))
+										.foregroundStyle(.secondary)
+								}
+							}
 						}
 						.frame(maxHeight: 150)
 						.background(Color(nsColor: .controlBackgroundColor))
@@ -134,6 +141,13 @@ struct MediaRepairView: View {
 	}
 
 	// MARK: - 分组结果展示（按图片 / 视频 两大类列出）
+
+	private static func timeString(_ date: Date) -> String {
+		let formatter = DateFormatter()
+		formatter.dateStyle = .none
+		formatter.timeStyle = .medium
+		return formatter.string(from: date)
+	}
 
 	@ViewBuilder
 	private func resultSections(_ result: MediaRepairResult) -> some View {

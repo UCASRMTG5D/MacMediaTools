@@ -83,7 +83,7 @@ func confirmAndTrash(url: URL) -> Bool {
 
     guard alert.runModal() == .alertFirstButtonReturn else { return false }
     do {
-        try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        try TrashManager.moveToTrash(url)
         return true
     } catch {
         return false

@@ -305,17 +305,6 @@ enum MediaRepair {
 
 	/// 生成不覆盖已有文件的目标 URL：同名则追加 _repaired 编号
 	private static func uniqueURL(for url: URL, targetExtension: String) -> URL {
-		let parent = url.deletingLastPathComponent()
-		let base = url.deletingPathExtension().lastPathComponent
-		var candidate = parent.appendingPathComponent("\(base).\(targetExtension)")
-		if !FileManager.default.fileExists(atPath: candidate.path) {
-			return candidate
-		}
-		var counter = 1
-		repeat {
-			candidate = parent.appendingPathComponent("\(base)_repaired\(counter).\(targetExtension)")
-			counter += 1
-		} while FileManager.default.fileExists(atPath: candidate.path)
-		return candidate
+		UniqueFileURL.make(for: url, targetExtension: targetExtension)
 	}
 }

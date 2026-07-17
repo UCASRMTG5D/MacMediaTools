@@ -189,6 +189,37 @@ public enum TrashManager {
 	}
 }
 
+// MARK: - Unique File URL
+
+/// 生成不覆盖已有文件的目标 URL。
+/// 同名时追加 `_repaired` 编号（或调用方指定的后缀），遵循「同名文件保护」规则，
+/// 不静默覆盖，避免磁盘文件数少于预期（见 BUG_KNOWLEDGE.md 的 Data.write 静默覆盖条目）。
+public enum UniqueFileURL {
+	/// 为 `url` 生成带 `targetExtension` 的新 URL，若已存在同名文件则追加自增编号。
+	/// - Parameters:
+	///   - url: 源文件 URL（用于提取父目录与基础名）
+	///   - targetExtension: 目标扩展名（不含点）
+	///   - suffix: 冲突时的编号后缀，默认 "_repaired"
+	public static func make(
+		for url: URL,
+		targetExtension: String,
+		suffix: String = "_repaired"
+	) -> URL {
+		let parent = url.deletingLastPathComponent()
+		let base = url.deletingPathExtension().lastPathComponent
+		var candidate = parent.appendingPathComponent("\(base).\(targetExtension)")
+		guard FileManager.default.fileExists(atPath: candidate.path) else {
+			return candidate
+		}
+		var counter = 1
+		repeat {
+			candidate = parent.appendingPathComponent("\(base)\(suffix)\(counter).\(targetExtension)")
+			counter += 1
+		} while FileManager.default.fileExists(atPath: candidate.path)
+		return candidate
+	}
+}
+
 // MARK: - File Comparison
 
 /// 文件比较策略协议
