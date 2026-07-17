@@ -203,6 +203,7 @@ final class DuplicateVideoScanModel: BaseObservableService {
 					Task { @MainActor [weak self] in
 						guard let self else { return }
 						self.progress = ProgressInfo(current: current, total: total, phase: phase)
+						self.deepPhase = phase
 					}
 				}
 			)
