@@ -64,8 +64,8 @@ enum SimilarPhotoClusterer {
 
 		// 融合距离（用于质心选择与展示）：取两哈希距离的均值
 		func fusedDistance(_ a: PhotoItem, _ b: PhotoItem) -> Double {
-			let d = VideoHashCache.hammingDistance(a.photoDHash, b.photoDHash)
-			let p = VideoHashCache.hammingDistance(a.photoHash, b.photoHash)
+			let d = MediaHashCache.hammingDistance(a.photoDHash, b.photoDHash)
+			let p = MediaHashCache.hammingDistance(a.photoHash, b.photoHash)
 			return Double(d + p) / 2.0
 		}
 
@@ -81,8 +81,8 @@ enum SimilarPhotoClusterer {
 			for j in (i + 1)..<paths.count {
 				let pathB = paths[j]
 				guard let itemB = indexed[pathB] else { continue }
-				let dDist = VideoHashCache.hammingDistance(itemA.photoDHash, itemB.photoDHash)
-				let pDist = VideoHashCache.hammingDistance(itemA.photoHash, itemB.photoHash)
+				let dDist = MediaHashCache.hammingDistance(itemA.photoDHash, itemB.photoDHash)
+				let pDist = MediaHashCache.hammingDistance(itemA.photoHash, itemB.photoHash)
 				if dDist <= dHashThreshold && pDist <= pHashThreshold {
 					adjacency[pathA, default: []].insert(pathB)
 					adjacency[pathB, default: []].insert(pathA)

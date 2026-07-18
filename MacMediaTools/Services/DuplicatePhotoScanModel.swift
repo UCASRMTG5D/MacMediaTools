@@ -79,15 +79,14 @@ final class DuplicatePhotoScanModel: BaseObservableService {
 		let capturedMode = detectionMode
 		
 		scanTask = Task { @MainActor in
-			guard await WorkManager.shared.requestStart(.duplicatePhotos) else {
-				self.isWorking = false
-				return
-			}
+			// 冲突仲裁由 View 层在调用前完成（requestStart + 弹窗）。此处仅登记占用，
+			// 任务结束时由 defer 清除。重复登记无害（字典覆盖）。
+			WorkManager.shared.registerStarted(.duplicatePhotos, writeDir: self.effectiveCacheDir)
 			defer {
 				self.isWorking = false
 				WorkManager.shared.finishWork(.duplicatePhotos)
 			}
-			
+
 			let files = await Task.detached(priority: .userInitiated) { [photoExts] in
 				FolderScanner.scanFiles(in: capturedFolderURL!, allowedExtensions: photoExts)
 			}.value
@@ -184,9 +183,9 @@ final class DuplicatePhotoScanModel: BaseObservableService {
 		
 		guard !Task.isCancelled else { return }
 		
-		var extractionResult: (VideoHashCache.CacheData, [VideoHashCache.ExtractedHashes])?
+		var extractionResult: (MediaHashCache.CacheData, [MediaHashCache.ExtractedHashes])?
 		do {
-			extractionResult = try await VideoHashCache.buildOrUpdatePhotoCache(
+			extractionResult = try await MediaHashCache.buildOrUpdatePhotoCache(
 				photos: files,
 				cacheDir: cacheDir,
 				sampleFraction: effectiveFraction,

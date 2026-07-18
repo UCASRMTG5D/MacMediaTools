@@ -29,7 +29,7 @@ MacMediaTools/
 │   ├── FileHasher.swift
 │   ├── FolderScanner.swift
 │   ├── DuplicateVideoScanModel.swift
-│   ├── VideoHashCache.swift
+│   ├── MediaHashCache.swift
 │   ├── SimilarVideoClusterer.swift
 │   ├── WorkManager.swift
 │   ├── OperationLogManager.swift
@@ -71,6 +71,36 @@ ScrollView {
 - 标题统一由 RootView 的 `.navigationTitle()` 管理，子视图不设置
 - 不使用 Spacer() 解决容器填充问题
 - 布局问题必须全面排查所有相关视图，不做局部修改
+
+#### 为什么要用统一模板
+
+该模板并非风格偏好，而是从多次线上 UI 异常（NavigationSplitView 详情区内容上浮、侧边栏位置漂移）反推沉淀而来（见 BUG_KNOWLEDGE.md `ui` 章节）。使用它的好处：
+
+1. **细节一致**：所有功能视图在 NavigationSplitView 详情区统一「填满可用空间」，不会出现内容被推到顶部、侧边栏跳动等视觉异常。
+2. **踩坑经验积累**：模板的每个约束（`.frame(maxHeight:)` 填满容器、`alignment: .leading` 左对齐、不用 `Spacer()` 兜底、不嵌套无意义 ScrollView）都对应一条已确认的 bug 根因，照做即规避历史问题。
+3. **布局可排查**：统一结构后，任何布局问题都能在同一套模板内定位，避免「部分视图有约束、部分没有」导致的不一致放大（见 BUG_KNOWLEDGE「局部布局修改可能让问题更糟」）。
+4. **降低 AI 出错率**：后续维护/新增功能时，套用同一模板即可，无需每次重新推导布局约束。
+
+#### 各功能接入情况（实事求是）
+
+> 判定标准：达到「ScrollView → VStack(leading) → .frame(maxWidth:.infinity,alignment:.leading) + 外层 .frame(maxWidth:.infinity,maxHeight:.infinity)」骨架即视为「接入」；缺少 `.background` / 显式 `.scrollIndicators` / `alignment` 缺省等细节记为「部分接入」。
+
+| 功能 | 接入情况 | 说明 |
+|------|----------|------|
+| 宽高调整 | 部分接入 | 早期实现，骨架符合但缺 `.background`、内层 `alignment` 缺省 |
+| 视频片段整合 | 接入 | 骨架完整，仅缺 `.background` |
+| 音视频处理 | 部分接入 | 时间轴结构复杂，内层缺 `alignment`、外层缺 `maxHeight` 与 `.background` |
+| 批量截图 | 部分接入 | 多段 ScrollView + 预览/列表双区，外层缺 `maxHeight` 与 `.background` |
+| 画幅拼接 | 部分接入 | 骨架符合；画布区按 BUG_KNOWLEDGE「嵌套 ScrollView」条目**条件性移除内层 ScrollView**（编辑模式用 ZStack、浏览模式用双轴 ScrollView），属有据可查的例外 |
+| 重复照片检测 | 接入 | 完全符合模板 |
+| 重复视频检测 | 接入 | 完全符合模板 |
+| 文件复制工具 | 接入 | 骨架完整，仅缺 `.background` |
+| 媒体修复 | 接入 | 骨架完整，仅缺 `.background` |
+
+**说明**：
+- 不存在「未接入」的功能——9 个功能全部在 `ToolFeature.swift` 注册并接入 `RootView`。
+- 「部分接入」多属历史债务：宽高调整/音视频处理/批量截图为最早实现，模板规范在 UI 上浮问题复盘后才制定，未回头逐个回填细节。
+- 「画幅拼接」的偏离是**主动且有据的例外**（手势竞争），非疏漏。
 
 ### 1.3 数据流架构
 

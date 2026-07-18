@@ -149,7 +149,7 @@ MacMediaTools/
 │   ├── FileHasher.swift           # SHA256 流式哈希
 │   ├── FolderScanner.swift        # 递归文件扫描
 │   ├── DuplicateVideoScanModel.swift # 重复视频扫描引擎
-│   ├── VideoHashCache.swift       # 视频哈希缓存
+│   ├── MediaHashCache.swift       # 媒体哈希缓存（照片+视频共用，分片持久化）
 │   ├── SimilarVideoClusterer.swift # dHash 内容指纹聚类
 │   ├── SpatialCanvasService.swift # 画幅拼接合成导出
 │   ├── WorkManager.swift          # 工作队列管理

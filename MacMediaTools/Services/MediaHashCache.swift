@@ -6,7 +6,7 @@ import ImageIO
 
 // MARK: - dHash & pHash Per-frame Fingerprint
 
-enum VideoHashCache {
+enum MediaHashCache {
 
 	// MARK: - Public Types
 

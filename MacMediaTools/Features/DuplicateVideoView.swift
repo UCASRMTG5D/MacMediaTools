@@ -20,6 +20,8 @@ struct DuplicateVideoView: View {
 	@State private var ignoredQuickSet: Set<String> = []
 	@State private var ignoredDeepSet: Set<String> = []
 	@State private var expandedComparisonClusterID: String? = nil
+	/// 冲突裁决弹窗状态：非 nil 时弹出 WorkConflictDialog
+	@State private var conflictResult: WorkManager.WorkStartResult? = nil
 
 	// MARK: - Computed
 
@@ -51,6 +53,9 @@ struct DuplicateVideoView: View {
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.scrollIndicators(.visible)
 		.background(Color(NSColor.controlBackgroundColor))
+		.sheet(item: $conflictResult) { result in
+			conflictSheet(result)
+		}
 	}
 
 	// MARK: - Subviews
@@ -101,7 +106,7 @@ struct DuplicateVideoView: View {
 	private var actionRow: some View {
 		HStack(spacing: 12) {
 			Button(scanModel.isWorking ? "扫描中…" : "开始扫描") {
-				scanModel.startScan()
+				startScanWithArbitration()
 			}
 			.disabled(scanModel.isWorking || scanModel.folderURL == nil)
 
@@ -114,6 +119,57 @@ struct DuplicateVideoView: View {
 				}
 			}
 		}
+	}
+
+	// MARK: - 冲突仲裁启动
+
+	/// 开始扫描前先经 WorkManager 仲裁：无运行中任务直接启动；
+	/// 有他者运行时按同文件夹改写冲突情况弹窗询问（替换/排队/并行）。
+	private func startScanWithArbitration() {
+		// 快速模式只读不落盘 → writeDir=nil（不参与冲突）；精细模式写 hash_cache 目录
+		let writeDir: URL? = scanModel.detectionMode == .quick ? nil : scanModel.effectiveCacheDir
+		let result = WorkManager.shared.requestStart(.duplicateVideos, writeDir: writeDir)
+		switch result {
+		case .allowed:
+			scanModel.startScan()
+		case .conflict, .choice:
+			conflictResult = result
+		case .denied:
+			break
+		}
+	}
+
+	/// 冲突弹窗内容：根据裁决结果渲染三选项，冲突时「并行」灰色 + hover 原因
+	private func conflictSheet(_ result: WorkManager.WorkStartResult) -> some View {
+		let runningName: String
+		let runningFeature: ToolFeature?
+		switch result {
+		case .conflict(let running, _), .choice(let running, _, _):
+			runningName = running.rawValue
+			runningFeature = running
+		default:
+			runningName = ""
+			runningFeature = nil
+		}
+		return WorkConflictDialog(
+			result: result,
+			runningName: runningName,
+			onReplace: {
+				if let running = runningFeature {
+					WorkManager.shared.replaceRunning(running)
+				}
+				conflictResult = nil
+				scanModel.startScan()
+			},
+			onQueue: {
+				conflictResult = nil
+				// 返回：不启动新任务，保留运行中任务继续
+			},
+			onParallel: {
+				conflictResult = nil
+				scanModel.startScan()
+			}
+		)
 	}
 
 	@ViewBuilder

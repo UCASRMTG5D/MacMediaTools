@@ -77,7 +77,7 @@ enum SimilarVideoClusterer {
 			for j in (i + 1)..<paths.count {
 				let pathB = paths[j]
 				guard let itemB = indexed[pathB] else { continue }
-				let sim = VideoHashCache.segmentSimilarity(itemA.segmentHashes, itemB.segmentHashes)
+				let sim = MediaHashCache.segmentSimilarity(itemA.segmentHashes, itemB.segmentHashes)
 				if sim >= threshold {
 					adjacency[pathA, default: []].insert(pathB)
 					adjacency[pathB, default: []].insert(pathA)
@@ -116,7 +116,7 @@ enum SimilarVideoClusterer {
 			let centroid = computeCentroid(for: component, indexed: indexed)
 			let items = component.map { path -> ClusterItem in
 				let item = indexed[path]!
-				let sim = VideoHashCache.segmentSimilarity(item.segmentHashes, centroid)
+				let sim = MediaHashCache.segmentSimilarity(item.segmentHashes, centroid)
 				return ClusterItem(
 					url: item.url,
 					fileSize: item.fileSize,
@@ -158,7 +158,7 @@ enum SimilarVideoClusterer {
 			var count = 0
 			for other in component {
 				guard other != candidate, let otherItem = indexed[other] else { continue }
-				totalSim += VideoHashCache.segmentSimilarity(candItem.segmentHashes, otherItem.segmentHashes)
+				totalSim += MediaHashCache.segmentSimilarity(candItem.segmentHashes, otherItem.segmentHashes)
 				count += 1
 			}
 			if count > 0 {
