@@ -1,5 +1,5 @@
 import Foundation
-import SwiftUI
+import Combine
 
 // MARK: - Service 协议体系
 
@@ -95,72 +95,6 @@ public protocol CacheableService {
 /// 统一进度回调类型
 public typealias ProgressHandler = @Sendable (ProgressInfo) -> Void
 
-/// 进度聚合器：合并多个子任务进度为统一进度
-public final class ProgressAggregator: @unchecked Sendable {
-	private let lock = NSLock()
-	private var children: [String: ProgressInfo] = [:]
-	private let weights: [String: Double]
-	
-	public init(weights: [String: Double] = [:]) {
-		self.weights = weights
-	}
-	
-	/// 更新子任务进度
-	public func update(_ childID: String, _ progress: ProgressInfo) {
-		lock.withLock {
-			children[childID] = progress
-		}
-	}
-	
-	/// 移除子任务
-	public func remove(_ childID: String) {
-		lock.withLock {
-			children.removeValue(forKey: childID)
-		}
-	}
-	
-	/// 计算加权总进度
-	public var combined: ProgressInfo {
-		lock.withLock {
-			guard !children.isEmpty else { return .zero }
-			
-			let totalWeight = weights.values.reduce(0, +)
-			guard totalWeight > 0 else {
-				// 等权重平均
-				let avgFraction = children.values.map(\.fraction).reduce(0, +) / Double(children.count)
-				let totalCurrent = children.values.map(\.current).reduce(0, +)
-				let totalTotal = children.values.map(\.total).reduce(0, +)
-				return ProgressInfo(
-					current: totalCurrent,
-					total: totalTotal,
-					phase: children.values.first?.phase ?? "",
-					message: children.values.first?.message ?? ""
-				)
-			}
-			
-			var weightedCurrent = 0
-			var weightedTotal = 0
-			var latestPhase = ""
-			var latestMessage = ""
-			
-			for (id, progress) in children {
-				let weight = weights[id] ?? 1.0
-				weightedCurrent += Int(Double(progress.current) * weight)
-				weightedTotal += Int(Double(progress.total) * weight)
-				if !progress.phase.isEmpty { latestPhase = progress.phase }
-				if !progress.message.isEmpty { latestMessage = progress.message }
-			}
-			
-			return ProgressInfo(
-				current: weightedCurrent,
-				total: weightedTotal,
-				phase: latestPhase,
-				message: latestMessage
-			)
-		}
-	}
-}
-
 // MARK: - 标准错误类型
 
 /// 服务层标准错误
@@ -174,7 +108,7 @@ public enum ServiceError: LocalizedError, Sendable {
 	case validationFailed(String)
 	case unsupportedFormat(String)
 	case diskSpaceInsufficient(required: UInt64, available: UInt64)
-	
+
 	public var errorDescription: String? {
 		switch self {
 		case .cancelled:
@@ -200,56 +134,3 @@ public enum ServiceError: LocalizedError, Sendable {
 	}
 }
 
-// MARK: - 任务管理
-
-/// 可取消的异步任务包装器
-public final class CancellableTask<Output>: @unchecked Sendable {
-	private let task: Task<Output, Error>
-	private let lock = NSLock()
-	private var _isCancelled = false
-	
-	public init(_ task: Task<Output, Error>) {
-		self.task = task
-	}
-	
-	public var value: Output {
-		get async throws {
-			try await task.value
-		}
-	}
-	
-	public func cancel() {
-		lock.withLock {
-			guard !_isCancelled else { return }
-			_isCancelled = true
-			task.cancel()
-		}
-	}
-	
-	public var isCancelled: Bool {
-		lock.withLock { _isCancelled }
-	}
-}
-
-/// 任务组管理器：统一管理一组可取消任务
-@MainActor
-public final class TaskGroupManager {
-	private var tasks: [String: Task<Void, Never>] = [:]
-	
-	public func add(_ id: String, _ task: Task<Void, Never>) {
-		tasks[id]?.cancel()
-		tasks[id] = task
-	}
-	
-	public func cancel(_ id: String) {
-		tasks[id]?.cancel()
-		tasks.removeValue(forKey: id)
-	}
-	
-	public func cancelAll() {
-		for (_, task) in tasks { task.cancel() }
-		tasks.removeAll()
-	}
-	
-	public var activeCount: Int { tasks.count }
-}

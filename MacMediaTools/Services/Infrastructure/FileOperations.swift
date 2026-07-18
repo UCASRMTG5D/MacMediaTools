@@ -2,58 +2,6 @@ import Foundation
 import AppKit
 import Combine
 
-/// 原子写入：先写临时文件，成功后 replace，避免写入中断导致文件损坏
-public enum AtomicWrite {
-	public indirect enum Error: Swift.Error, LocalizedError {
-		case tempFileCreationFailed
-		case writeFailed(reason: String)
-		case replaceFailed(reason: String)
-		
-		public var errorDescription: String? {
-			switch self {
-			case .tempFileCreationFailed: return "无法创建临时文件"
-			case .writeFailed(let reason): return "写入失败: \(reason)"
-			case .replaceFailed(let reason): return "文件替换失败: \(reason)"
-			}
-		}
-	}
-	
-	/// 原子写入 Data
-	/// - Parameters:
-	///   - data: 要写入的数据
-	///   - url: 目标文件 URL
-	///   - options: 写入选项（默认 .atomicWrite 在某些系统上不可靠，我们手动实现）
-	public static func write(
-		_ data: Data,
-		to url: URL,
-		options: Data.WritingOptions = []
-	) throws {
-		let tempURL = url.deletingLastPathComponent()
-			.appendingPathComponent(".tmp_\(url.lastPathComponent)_\(UUID().uuidString.prefix(8))")
-		
-		do {
-			try data.write(to: tempURL, options: options)
-			try FileManager.default.replaceItemAt(url, withItemAt: tempURL)
-		} catch {
-			// 清理临时文件
-			try? FileManager.default.removeItem(at: tempURL)
-			throw Error.writeFailed(reason: error.localizedDescription)
-		}
-	}
-	
-	/// 原子写入字符串
-	public static func write(
-		_ string: String,
-		to url: URL,
-		encoding: String.Encoding = .utf8
-	) throws {
-		guard let data = string.data(using: encoding) else {
-			throw Error.writeFailed(reason: CocoaError(.fileWriteInvalidFileName).localizedDescription)
-		}
-		try write(data, to: url)
-	}
-}
-
 // MARK: - Trash Manager
 
 /// 统一的废纸篓操作，替代分散的 NSWorkspace.shared.recycle / FileManager.trashItem
@@ -61,7 +9,7 @@ public enum TrashManager {
 	public indirect enum Error: Swift.Error, LocalizedError {
 		case moveFailed(underlying: Swift.Error)
 		case notSupported
-		
+
 		public var errorDescription: String? {
 			switch self {
 			case .moveFailed(let e): return "移至废纸篓失败: \(e.localizedDescription)"
@@ -69,7 +17,7 @@ public enum TrashManager {
 			}
 		}
 	}
-	
+
 	/// 将文件移至废纸篓（macOS 10.14+ 使用 FileManager.trashItem，更早版本回退）
 	/// - Returns: true 表示成功
 	@discardableResult
@@ -84,7 +32,7 @@ public enum TrashManager {
 			return true
 		}
 	}
-	
+
 	/// 批量移至废纸篓，返回失败的文件
 	public static func moveToTrash(_ urls: [URL]) -> [URL: Error] {
 		var failed: [URL: Error] = [:]
@@ -129,40 +77,5 @@ public enum UniqueFileURL {
 			counter += 1
 		} while FileManager.default.fileExists(atPath: candidate.path)
 		return candidate
-	}
-}
-
-// MARK: - File Comparison
-
-/// 文件比较策略协议
-public protocol FileComparator: Sendable {
-	associatedtype Result: Sendable
-	
-	/// 比较两个文件
-	/// - Returns: 比较结果
-	static func compare(_ lhs: URL, _ rhs: URL) async throws -> Result
-}
-
-/// 图片 SHA256 完全相等比较
-public enum ImageSHA256Comparator: FileComparator {
-	public typealias Result = Bool // true = 相同
-	
-	public static func compare(_ lhs: URL, _ rhs: URL) async throws -> Bool {
-		let hash1 = try FileHasher.sha256(url: lhs)
-		let hash2 = try FileHasher.sha256(url: rhs)
-		return hash1 == hash2
-	}
-}
-
-/// 视频时长+分辨率比较
-public enum VideoPropertyComparator: FileComparator {
-	public typealias Result = Bool
-	
-	public static func compare(_ lhs: URL, _ rhs: URL) async throws -> Bool {
-		let info1 = try await VideoToolkit.readDisplayInfo(url: lhs)
-		let info2 = try await VideoToolkit.readDisplayInfo(url: rhs)
-		
-		return abs(info1.durationSeconds - info2.durationSeconds) < 0.5 &&
-			   info1.displaySize == info2.displaySize
 	}
 }

@@ -21,12 +21,15 @@ final class WorkManager: ObservableObject {
 	///            `false` if the user cancelled or the request was queued.
 	///
 	/// 旧版接口（无写入目录信息）：保持原有"强制串行 + 打断/排队/取消"语义，
+	/// 旧版接口（无写入目录信息）：保持原有"强制串行 + 打断/排队/取消"语义，
 	/// 供不涉及同文件夹并行冲突检测的功能使用。
+	/// 启动成功后同时登记到 activeClaims（writeDir: nil），使新冲突检测器可见本任务。
 	func requestStart(_ feature: ToolFeature) async -> Bool {
 		// If nothing is running or it's the same feature, proceed.
 		if currentWork == nil || currentWork == feature {
 			currentWork = feature
 			pendingWork = nil
+			registerStarted(feature, writeDir: nil)
 			return true
 		}
 
@@ -48,6 +51,7 @@ final class WorkManager: ObservableObject {
 		case .alertFirstButtonReturn: // Interrupt
 			cancelWork()
 			currentWork = feature
+			registerStarted(feature, writeDir: nil)
 			return true
 		case .alertSecondButtonReturn: // Queue
 			pendingWork = feature

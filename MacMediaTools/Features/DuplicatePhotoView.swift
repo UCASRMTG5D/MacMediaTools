@@ -15,6 +15,7 @@ struct DuplicatePhotoView: View {
 	@State private var ignoredDeepSet: Set<String> = []
 	/// 冲突裁决弹窗状态：非 nil 时弹出 WorkConflictDialog
 	@State private var conflictResult: WorkManager.WorkStartResult? = nil
+	@State private var pendingWriteDir: URL? = nil
 
 	// MARK: - Computed
 
@@ -46,9 +47,9 @@ struct DuplicatePhotoView: View {
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.scrollIndicators(.visible)
 		.background(Color(NSColor.controlBackgroundColor))
-		.sheet(item: $conflictResult) { result in
-			conflictSheet(result)
-		}
+	.sheet(item: $conflictResult) { result in
+		conflictSheet(result, writeDir: pendingWriteDir)
+	}
 	}
 
 	// MARK: - Subviews
@@ -219,8 +220,10 @@ struct DuplicatePhotoView: View {
 		let result = WorkManager.shared.requestStart(.duplicatePhotos, writeDir: writeDir)
 		switch result {
 		case .allowed:
+			WorkManager.shared.registerStarted(.duplicatePhotos, writeDir: writeDir)
 			scanModel.startScan()
 		case .conflict, .choice:
+			pendingWriteDir = writeDir
 			conflictResult = result
 		case .denied:
 			break
@@ -228,7 +231,7 @@ struct DuplicatePhotoView: View {
 	}
 
 	/// 冲突弹窗内容：根据裁决结果渲染三选项，冲突时「并行」灰色 + hover 原因
-	private func conflictSheet(_ result: WorkManager.WorkStartResult) -> some View {
+	private func conflictSheet(_ result: WorkManager.WorkStartResult, writeDir: URL?) -> some View {
 		let runningName: String
 		let runningFeature: ToolFeature?
 		switch result {
@@ -247,14 +250,19 @@ struct DuplicatePhotoView: View {
 					WorkManager.shared.replaceRunning(running)
 				}
 				conflictResult = nil
+				pendingWriteDir = nil
+				WorkManager.shared.registerStarted(.duplicatePhotos, writeDir: writeDir)
 				scanModel.startScan()
 			},
 			onQueue: {
 				conflictResult = nil
+				pendingWriteDir = nil
 				// 返回：不启动新任务，保留运行中任务继续
 			},
 			onParallel: {
 				conflictResult = nil
+				pendingWriteDir = nil
+				WorkManager.shared.registerStarted(.duplicatePhotos, writeDir: writeDir)
 				scanModel.startScan()
 			}
 		)

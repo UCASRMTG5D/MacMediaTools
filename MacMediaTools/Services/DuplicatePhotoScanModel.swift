@@ -1,5 +1,5 @@
 import AppKit
-import SwiftUI
+import Combine
 
 // MARK: - Detection Mode
 
@@ -79,9 +79,8 @@ final class DuplicatePhotoScanModel: BaseObservableService {
 		let capturedMode = detectionMode
 		
 		scanTask = Task { @MainActor in
-			// 冲突仲裁由 View 层在调用前完成（requestStart + 弹窗）。此处仅登记占用，
-			// 任务结束时由 defer 清除。重复登记无害（字典覆盖）。
-			WorkManager.shared.registerStarted(.duplicatePhotos, writeDir: self.effectiveCacheDir)
+			// 冲突仲裁与占用登记由 View 层在调用 startScan 前完成（requestStart + registerStarted）。
+			// 此处仅负责在任务结束时清除登记。
 			defer {
 				self.isWorking = false
 				WorkManager.shared.finishWork(.duplicatePhotos)

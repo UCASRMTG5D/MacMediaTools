@@ -1,6 +1,6 @@
 import AppKit
 import AVFoundation
-import SwiftUI
+import Combine
 
 // MARK: - 媒体修复模型
 

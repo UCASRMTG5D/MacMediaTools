@@ -13,8 +13,6 @@
 		2AB144B5C320FA623C975EA5 /* CropSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6194B9F0CD7D999A5178373F /* CropSettingsView.swift */; };
 		2C834BF9941D6090DDF589CD /* BaseObservableService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D6402A8FB1FA3DD3068246 /* BaseObservableService.swift */; };
 		30734BE9BBA44E79CC7C9B47 /* CommonComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB24FE885CF9D8390C690B0 /* CommonComponents.swift */; };
-		31E18638FA7043A98DE9489D /* MacMediaTools/Services/Infrastructure/ObservableService.swift in None */ = {isa = PBXBuildFile; fileRef = 0A227DC7D67247A5AE3C86C1 /* MacMediaTools/Services/Infrastructure/ObservableService.swift */; };
-		676421FE9687418F83457E20 /* MacMediaTools/Services/Infrastructure/FileOperations.swift in None */ = {isa = PBXBuildFile; fileRef = 0B042E3379A248198D702064 /* MacMediaTools/Services/Infrastructure/FileOperations.swift */; };
 		69934611BAD4AC8853A49371 /* FileOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638C494095D47F0FE4C1D00D /* FileOperations.swift */; };
 		717FA804C7924237BEB3AFA1 /* HelpPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */; };
 		7B2E4852A8115B9B20A1BEA0 /* ServiceProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81E04C88BBA4158AA5B80348 /* ServiceProtocols.swift */; };
@@ -68,24 +66,18 @@
 		AA0000000000000000000142 /* PhotoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000240 /* PhotoComparisonPanel.swift */; };
 		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
 		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
-		D28BE064682E4655B115C0E8 /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift in None */ = {isa = PBXBuildFile; fileRef = 01C24CC3733B4CA2BA56949F /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift */; };
 		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
 		EF65B2EBE108E5A8FC6DC98D /* AudioTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8084873CD47F896F183A5556 /* AudioTimelineView.swift */; };
-		F8CF77569E4445B99B194638 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift in None */ = {isa = PBXBuildFile; fileRef = 4CDDF5C8ABA2466D92422336 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		01C24CC3733B4CA2BA56949F /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/BaseObservableService.swift; sourceTree = "<group>"; };
 		02BEB260C3573273D9070860 /* ResizeSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResizeSettingsView.swift; sourceTree = "<group>"; };
-		0A227DC7D67247A5AE3C86C1 /* MacMediaTools/Services/Infrastructure/ObservableService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/ObservableService.swift; sourceTree = "<group>"; };
-		0B042E3379A248198D702064 /* MacMediaTools/Services/Infrastructure/FileOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/FileOperations.swift; sourceTree = "<group>"; };
 		23EE24C38B34395DB6900278 /* TrackBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrackBarView.swift; sourceTree = "<group>"; };
 		2BB24FE885CF9D8390C690B0 /* CommonComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommonComponents.swift; path = MacMediaTools/Components/CommonComponents.swift; sourceTree = SOURCE_ROOT; };
 		313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
 		34D6402A8FB1FA3DD3068246 /* BaseObservableService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BaseObservableService.swift; path = MacMediaTools/Services/Infrastructure/BaseObservableService.swift; sourceTree = SOURCE_ROOT; };
 		3E5643549DD0895694A674F0 /* StandardViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StandardViews.swift; path = MacMediaTools/Components/StandardViews.swift; sourceTree = SOURCE_ROOT; };
 		4B6A6B4BC6914D6E4CEFE10B /* TrackRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrackRowView.swift; sourceTree = "<group>"; };
-		4CDDF5C8ABA2466D92422336 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMediaTools/Services/Infrastructure/ServiceProtocols.swift; sourceTree = "<group>"; };
 		6194B9F0CD7D999A5178373F /* CropSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CropSettingsView.swift; sourceTree = "<group>"; };
 		638C494095D47F0FE4C1D00D /* FileOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FileOperations.swift; path = MacMediaTools/Services/Infrastructure/FileOperations.swift; sourceTree = SOURCE_ROOT; };
 		8084873CD47F896F183A5556 /* AudioTimelineView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioTimelineView.swift; sourceTree = "<group>"; };
@@ -253,10 +245,6 @@
 				AA0000000000000000000232 /* MediaRepairService.swift */,
 				AA0000000000000000000233 /* MediaRepairModel.swift */,
 				AA0000000000000000000234 /* SecurityBookmarkStore.swift */,
-				01C24CC3733B4CA2BA56949F /* MacMediaTools/Services/Infrastructure/BaseObservableService.swift */,
-				0A227DC7D67247A5AE3C86C1 /* MacMediaTools/Services/Infrastructure/ObservableService.swift */,
-				4CDDF5C8ABA2466D92422336 /* MacMediaTools/Services/Infrastructure/ServiceProtocols.swift */,
-				0B042E3379A248198D702064 /* MacMediaTools/Services/Infrastructure/FileOperations.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
