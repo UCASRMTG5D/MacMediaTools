@@ -13,6 +13,7 @@ public enum ToolFeature: String, CaseIterable, Identifiable, Sendable {
 	case duplicateVideos = "重复视频检测"
 	// 文件操作
 	case fileCopy = "文件复制工具"
+	case fileSearch = "文件搜索"
 	// 修复工具
 	case mediaRepair = "媒体修复"
 	

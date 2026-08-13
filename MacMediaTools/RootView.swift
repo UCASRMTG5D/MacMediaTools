@@ -40,6 +40,8 @@ struct RootView: View {
 					DuplicateVideoView(scanModel: duplicateVideoScan)
 				case .fileCopy:
 					FileCopyView()
+				case .fileSearch:
+					FileSearchView()
 				case .spatialCanvas:
 					SpatialCanvasView()
 				case .mediaRepair:

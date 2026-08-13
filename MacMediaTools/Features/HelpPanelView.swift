@@ -127,6 +127,18 @@ private let helpFeatures: [HelpFeature] = [
 			"支持选择文件或递归扫描整个文件夹",
 		]
 	),
+	HelpFeature(
+		number: "10",
+		name: "文件搜索",
+		icon: "magnifyingglass",
+		summary: "按文件名关键词搜索目标文件夹中的图片 / 视频，分组以缩略图网格展示。",
+		details: [
+			"递归扫描目标文件夹，文件名包含关键词即匹配（不区分大小写）",
+			"结果按图片 / 视频两大类分组，组内按文件创建时间倒序排列",
+			"默认以缩略图网格展示，缩略图大小可通过滑块调整（每行显示数量随之变化）",
+			"点击缩略图可用系统默认应用打开，支持在 Finder 中显示",
+		]
+	),
 ]
 
 // MARK: - Environment / Build Info

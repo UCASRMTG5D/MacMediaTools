@@ -64,6 +64,8 @@
 		AA0000000000000000000140 /* MediaRepairModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000233 /* MediaRepairModel.swift */; };
 		AA0000000000000000000141 /* SecurityBookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000234 /* SecurityBookmarkStore.swift */; };
 		AA0000000000000000000142 /* PhotoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000240 /* PhotoComparisonPanel.swift */; };
+		AA0000000000000000000150 /* FileSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000251 /* FileSearchView.swift */; };
+		AA0000000000000000000151 /* FinderSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000252 /* FinderSearchService.swift */; };
 		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
 		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
 		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
@@ -126,6 +128,8 @@
 		AA000000000000000000023E /* DuplicatePhotoScanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicatePhotoScanModel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000240 /* PhotoComparisonPanel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoComparisonPanel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000250 /* WorkConflictDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkConflictDialog.swift; sourceTree = "<group>"; };
+		AA0000000000000000000251 /* FileSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000252 /* FinderSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderSearchService.swift; sourceTree = "<group>"; };
 		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -245,6 +249,7 @@
 				AA0000000000000000000232 /* MediaRepairService.swift */,
 				AA0000000000000000000233 /* MediaRepairModel.swift */,
 				AA0000000000000000000234 /* SecurityBookmarkStore.swift */,
+				AA0000000000000000000252 /* FinderSearchService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -273,6 +278,7 @@
 				F013829C1C8EE6D9689BDC07 /* HelpPanelView.swift */,
 				AA0000000000000000000230 /* SpatialCanvasView.swift */,
 				AA0000000000000000000231 /* MediaRepairView.swift */,
+				AA0000000000000000000251 /* FileSearchView.swift */,
 			);
 			path = MacMediaTools/Features;
 			sourceTree = SOURCE_ROOT;
@@ -401,6 +407,8 @@
 				2C834BF9941D6090DDF589CD /* BaseObservableService.swift in Sources */,
 				7B2E4852A8115B9B20A1BEA0 /* ServiceProtocols.swift in Sources */,
 				69934611BAD4AC8853A49371 /* FileOperations.swift in Sources */,
+				AA0000000000000000000150 /* FileSearchView.swift in Sources */,
+				AA0000000000000000000151 /* FinderSearchService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
