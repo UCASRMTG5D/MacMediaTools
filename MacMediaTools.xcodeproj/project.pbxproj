@@ -66,6 +66,7 @@
 		AA0000000000000000000142 /* PhotoComparisonPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000240 /* PhotoComparisonPanel.swift */; };
 		AA0000000000000000000150 /* FileSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000251 /* FileSearchView.swift */; };
 		AA0000000000000000000151 /* FinderSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000252 /* FinderSearchService.swift */; };
+		AA0000000000000000000152 /* FileSearchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000253 /* FileSearchModel.swift */; };
 		B891E204F1A491D6D9CCCBB6 /* TrackBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE24C38B34395DB6900278 /* TrackBarView.swift */; };
 		BA7A0D76D390D9CC085DD851 /* OutputSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975DE8271C4D0573DF470FF5 /* OutputSettingsView.swift */; };
 		D8E43E5EC267EC4DD2732528 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDDD110A79BB8BD96C9FB /* TimeRulerView.swift */; };
@@ -130,6 +131,7 @@
 		AA0000000000000000000250 /* WorkConflictDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkConflictDialog.swift; sourceTree = "<group>"; };
 		AA0000000000000000000251 /* FileSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000252 /* FinderSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderSearchService.swift; sourceTree = "<group>"; };
+		AA0000000000000000000253 /* FileSearchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchModel.swift; sourceTree = "<group>"; };
 		AA0000000000000000000301 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000302 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000000000000000000401 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -250,6 +252,7 @@
 				AA0000000000000000000233 /* MediaRepairModel.swift */,
 				AA0000000000000000000234 /* SecurityBookmarkStore.swift */,
 				AA0000000000000000000252 /* FinderSearchService.swift */,
+				AA0000000000000000000253 /* FileSearchModel.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -409,6 +412,7 @@
 				69934611BAD4AC8853A49371 /* FileOperations.swift in Sources */,
 				AA0000000000000000000150 /* FileSearchView.swift in Sources */,
 				AA0000000000000000000151 /* FinderSearchService.swift in Sources */,
+				AA0000000000000000000152 /* FileSearchModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

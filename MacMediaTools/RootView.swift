@@ -16,6 +16,10 @@ struct RootView: View {
 	/// when the user switches to another feature and back.
 	@StateObject private var mediaRepair = MediaRepairModel()
 	
+	/// Lives here so FileSearchView's search continues running
+	/// when the user switches to another feature and back.
+	@StateObject private var fileSearch = FileSearchModel()
+	
 	var body: some View {
 		NavigationSplitView {
 			List(ToolFeature.allCases, id: \.self, selection: $selection) { item in
@@ -41,7 +45,7 @@ struct RootView: View {
 				case .fileCopy:
 					FileCopyView()
 				case .fileSearch:
-					FileSearchView()
+					FileSearchView(model: fileSearch)
 				case .spatialCanvas:
 					SpatialCanvasView()
 				case .mediaRepair:

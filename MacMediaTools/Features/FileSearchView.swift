@@ -5,13 +5,11 @@ import SwiftUI
 
 // MARK: - View
 
+/// 搜索状态与执行逻辑由 RootView 持有的 FileSearchModel（@StateObject）提供，
+/// 切换功能再回来时搜索继续运行、结果不丢失。
 struct FileSearchView: View {
-	@State private var folderURL: URL?
-	@State private var keyword = ""
+	@ObservedObject var model: FileSearchModel
 	@State private var thumbSize: CGFloat = 120
-	@State private var searchResult: FinderSearchService.SearchResult?
-	@State private var isSearching = false
-	@State private var errorMessage: String?
 
 	var body: some View {
 		ScrollView {
@@ -23,7 +21,7 @@ struct FileSearchView: View {
 				thumbSizeRow
 
 				// Error
-				if let msg = errorMessage {
+				if let msg = model.errorMessage {
 					Text(msg)
 						.foregroundStyle(.red)
 						.font(.subheadline)
@@ -32,10 +30,10 @@ struct FileSearchView: View {
 				Divider()
 
 				// Results
-				if !isSearching {
-					if searchResult != nil {
+				if !model.isSearching {
+					if model.searchResult != nil {
 						resultsSection
-					} else if folderURL == nil {
+					} else if model.folderURL == nil {
 						emptyHint
 					}
 				} else {
@@ -55,21 +53,19 @@ struct FileSearchView: View {
 	private var controlRow: some View {
 		HStack(spacing: 12) {
 			OpenPanelButton(title: "选择文件夹…", mode: .folder) { urls in
-				folderURL = urls.first
-				searchResult = nil
-				errorMessage = nil
+				model.selectFolder(urls.first)
 			}
-			if let url = folderURL {
+			if let url = model.folderURL {
 				Text(url.path)
 					.font(.subheadline)
 					.foregroundStyle(.secondary)
 					.lineLimit(1)
 			}
-			TextField("输入关键词…", text: $keyword)
+			TextField("输入关键词…", text: $model.keyword)
 				.textFieldStyle(.roundedBorder)
 				.frame(width: 200)
-			Button(action: startSearch) {
-				if isSearching {
+			Button(action: model.startSearch) {
+				if model.isSearching {
 					ProgressView()
 						.controlSize(.small)
 				} else {
@@ -77,7 +73,7 @@ struct FileSearchView: View {
 				}
 			}
 			.buttonStyle(.borderedProminent)
-			.disabled(folderURL == nil || isSearching)
+			.disabled(model.folderURL == nil || model.isSearching)
 		}
 	}
 
@@ -97,7 +93,7 @@ struct FileSearchView: View {
 
 	@ViewBuilder
 	private var resultsSection: some View {
-		if let result = searchResult {
+		if let result = model.searchResult {
 			if result.images.isEmpty && result.videos.isEmpty {
 				Text("未找到匹配的文件")
 					.foregroundStyle(.secondary)
@@ -158,20 +154,7 @@ struct FileSearchView: View {
 		}
 	}
 
-	// MARK: - Actions
-
-	private func startSearch() {
-		guard let folder = folderURL else { return }
-		isSearching = true
-		errorMessage = nil
-		Task { @MainActor in
-			let result = await Task.detached(priority: .userInitiated) {
-				FinderSearchService.search(in: folder, keyword: self.keyword)
-			}.value
-			self.searchResult = result
-			self.isSearching = false
-		}
-	}
+	// MARK: - Helpers
 
 	private func isVideoExt(_ url: URL) -> Bool {
 		FinderSearchService.videoExts.contains(url.pathExtension.lowercased())
