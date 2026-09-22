@@ -90,6 +90,29 @@ func confirmAndTrash(url: URL) -> Bool {
     }
 }
 
+// MARK: - 宽高比预设
+
+/// 宽高比预设，供宽高调整功能的裁剪与尺寸调整复用
+struct AspectRatioPreset: Identifiable {
+    let id: String
+    let label: String
+    let ratioWidth: CGFloat
+    let ratioHeight: CGFloat
+
+    /// ratio 数值（宽 / 高）
+    var ratio: CGFloat { ratioWidth / ratioHeight }
+
+    static let all: [AspectRatioPreset] = [
+        AspectRatioPreset(id: "1:1", label: "1:1", ratioWidth: 1, ratioHeight: 1),
+        AspectRatioPreset(id: "4:3", label: "4:3", ratioWidth: 4, ratioHeight: 3),
+        AspectRatioPreset(id: "3:2", label: "3:2", ratioWidth: 3, ratioHeight: 2),
+        AspectRatioPreset(id: "16:9", label: "16:9", ratioWidth: 16, ratioHeight: 9),
+        AspectRatioPreset(id: "3:4", label: "3:4", ratioWidth: 3, ratioHeight: 4),
+        AspectRatioPreset(id: "2:3", label: "2:3", ratioWidth: 2, ratioHeight: 3),
+        AspectRatioPreset(id: "9:16", label: "9:16", ratioWidth: 9, ratioHeight: 16),
+    ]
+}
+
 // MARK: - UserDefaults Keys
 
 extension UserDefaults {

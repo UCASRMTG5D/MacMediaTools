@@ -72,6 +72,27 @@ struct CropSettingsView: View {
 						.controlSize(.small)
 						.disabled(cropWidthText.isEmpty || cropHeightText.isEmpty)
 					}
+
+					// 宽高比预设：点击后裁剪框调整为该比例的最大内接矩形
+					HStack(spacing: 8) {
+						Text("宽高比预设")
+							.font(.caption)
+							.foregroundStyle(.secondary)
+
+						ForEach(AspectRatioPreset.all) { preset in
+							Button(preset.label) {
+								applyAspectPreset(preset)
+							}
+							.buttonStyle(.bordered)
+							.controlSize(.small)
+							.font(.caption)
+						}
+					}
+
+					// 交互操作提示
+					Text("拖动边框移动位置，拖动顶点自由调整大小；裁剪框不会超出图片范围")
+						.font(.caption)
+						.foregroundStyle(.secondary)
 				}
 			}
 		} label: {
@@ -125,6 +146,26 @@ struct CropSettingsView: View {
 		cropWidthText = String(Int(normalizedRect.width * d.width))
 		cropHeightText = String(Int(normalizedRect.height * d.height))
 		DispatchQueue.main.async { isSyncingCropField = false }
+	}
+
+	private func applyAspectPreset(_ preset: AspectRatioPreset) {
+		guard let d = displaySize else { return }
+		// 几何约束：按预设比例在图片尺寸内取最大内接矩形，再围绕裁剪框中心归一化放置
+		var w = d.width
+		var h = w / preset.ratio
+		if h > d.height {
+			h = d.height
+			w = h * preset.ratio
+		}
+		let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+		let nw = w / d.width
+		let nh = h / d.height
+		let x = min(max(center.x - nw / 2, 0), 1 - nw)
+		let y = min(max(center.y - nh / 2, 0), 1 - nh)
+		withAnimation { normalizedRect = CGRect(x: x, y: y, width: nw, height: nh) }
+
+		syncRectToFields()
+		onSchedulePreviewGeneration()
 	}
 
 	private func commitCropFields() {

@@ -65,7 +65,44 @@ struct ResizeSettingsView: View {
 					.onChange(of: scaleMode) { _ in onSchedulePreviewGeneration() }
 				}
 			}
+
+			HStack(spacing: 8) {
+				Text("宽高比预设")
+					.font(.caption)
+					.foregroundStyle(.secondary)
+
+				ForEach(AspectRatioPreset.all) { preset in
+					Button(preset.label) { applyAspectPreset(preset) }
+						.buttonStyle(.bordered)
+						.controlSize(.small)
+						.font(.caption)
+				}
+
+				Button("恢复原始尺寸") { restoreOriginalSize() }
+					.buttonStyle(.bordered)
+					.controlSize(.small)
+					.font(.caption)
+					.disabled(sourceSize == nil)
+			}
 		}
 		.padding(.leading, 4)
+	}
+
+	private func applyAspectPreset(_ preset: AspectRatioPreset) {
+		// 在来源分辨率内取满足比例且面积最大的整数尺寸
+		guard let src = sourceSize else { return }
+		var w = src.width
+		var h = w / preset.ratio
+		if h > src.height { h = src.height; w = h * preset.ratio }
+		targetWidth = String(Int(w.rounded()))
+		targetHeight = String(Int(h.rounded()))
+		onSchedulePreviewGeneration()
+	}
+
+	private func restoreOriginalSize() {
+		guard let src = sourceSize else { return }
+		targetWidth = String(Int(src.width))
+		targetHeight = String(Int(src.height))
+		onSchedulePreviewGeneration()
 	}
 }
