@@ -72,14 +72,22 @@ struct VideoScreenshotExtractorView: View {
     @State private var playbackEndObserver: NSObjectProtocol?
 
     var body: some View {
-        HSplitView {
-            sidebarPanel
-                .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
+        // 不使用嵌套 HSplitView：NavigationSplitView 详情区里再放一条 NSSplitView，
+        // 会让外层侧边栏宽度被内层最小宽度挤压，切换功能时侧边栏出现显示异常。
+        ScrollView(.vertical, showsIndicators: true) {
+            HStack(alignment: .top, spacing: 16) {
+                sidebarPanel
+                    .frame(width: 320)
 
-            detailPanel
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                detailPanel
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(minWidth: 1000, minHeight: 700)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scrollIndicators(.visible)
+        .background(Color(NSColor.controlBackgroundColor))
         .alert("错误", isPresented: $showError) {
             Button("确定", role: .cancel) { }
         } message: {
@@ -148,8 +156,7 @@ struct VideoScreenshotExtractorView: View {
     }
 
     private var sidebarPanel: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("视频导入")
                         .font(.headline)
@@ -315,17 +322,19 @@ VStack(alignment: .leading, spacing: 8) {
                         .foregroundStyle(.red)
                     }
                 }
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .scrollIndicators(.visible)
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
     }
 
     private var detailPanel: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("视频预览")
                         .font(.headline)
@@ -500,11 +509,7 @@ VStack(alignment: .leading, spacing: 8) {
                     .padding(.bottom, 16)
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .scrollIndicators(.visible)
-        .background(Color(NSColor.controlBackgroundColor))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Video Selection

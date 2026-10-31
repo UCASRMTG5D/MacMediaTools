@@ -3,7 +3,7 @@
 > 从 bug-reports/ 复盘文档中提炼的可复用经验。
 > AI 在写代码前应读取此文件，避免重复踩坑。
 > 每条经验都标注了精确场景、限制条件和置信度。
-> 更新于: 2026-07-10 14:00
+> 更新于: 2026-10-31 12:00
 
 ---
 
@@ -156,6 +156,22 @@
   标题统一由 `.navigationTitle()` 在 RootView 管理，不在子视图中设置。
 - **例外**：不使用 NavigationSplitView 的独立窗口或 modal 视图不需要此约束。
 - **来源**：MacMediaTools UI 上浮-侧边栏异常问题排查记录
+- **置信度**：high
+
+---
+
+### NavigationSplitView 详情区禁止嵌套 HSplitView / NSSplitView
+
+- **场景**：`NavigationSplitView` 的 detail 侧视图内部再使用 `HSplitView`（或 `NSSplitView`）做左右分栏，且内层视图声明了接近窗口最小宽度的 `minWidth`。适用于任何在 NavigationSplitView 详情区做多栏布局的功能页。
+- **根因**：NavigationSplitView 自身也是分栏容器，会与内层 split view 竞争宽度分配。当内层 `HSplitView` 子视图带 `.frame(minWidth: 1000)` 这类硬约束时，外层布局算法优先满足内层最小宽度，把 sidebar 压缩到约 80px（只剩残缺文字）。该异常只在打开对应功能时出现，其他功能页正常，因此容易误判为「某个功能页的问题」而非嵌套分栏的结构问题。
+- **规则**：
+  1. 详情区内**禁止**使用 `HSplitView` / `NSSplitView`。
+  2. 需要左右两栏时使用「单个外层 `ScrollView` + `HStack(alignment: .top)`」：左列固定宽度（如 `.frame(width: 320)`），右列 `.frame(maxWidth: .infinity, alignment: .leading)`。
+  3. 详情区内部不要声明接近窗口宽度的 `minWidth`；窗口最小尺寸统一由 `RootView.frame(minWidth:minHeight:)` 管理。
+  4. 各栏不要再各自嵌套 `ScrollView`，由唯一的外层 ScrollView 统一滚动。
+- **例外**：在独立窗口（如帮助窗口）、`sheet`、或非 NavigationSplitView 的根视图中，可以使用 `HSplitView`。此时不存在外层分栏竞争。
+- **标签**：`ui` `swiftui` `布局约束`
+- **来源**：2026-10-31 批量截图页侧边栏被挤成 80px 窄条问题（`VideoScreenshotExtractorView`）
 - **置信度**：high
 
 ---

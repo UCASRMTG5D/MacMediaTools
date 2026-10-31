@@ -6,6 +6,7 @@ public enum ToolFeature: String, CaseIterable, Identifiable, Sendable {
 	case videoConcat = "视频片段整合"
 	case audioVideoEdit = "音视频处理"
 	case keyFrameExtract = "批量截图"
+	case pauseRemoval = "停顿去除"
 	// 合成
 	case spatialCanvas = "画幅拼接"
 	// 查重清理

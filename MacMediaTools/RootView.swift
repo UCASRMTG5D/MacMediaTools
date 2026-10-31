@@ -38,6 +38,8 @@ struct RootView: View {
 					AudioVideoEditorView()
 				case .keyFrameExtract:
 					VideoScreenshotExtractorView()
+				case .pauseRemoval:
+					PauseRemovalView()
 				case .duplicatePhotos:
 					DuplicatePhotoView(scanModel: duplicatePhotoScan)
 				case .duplicateVideos:
