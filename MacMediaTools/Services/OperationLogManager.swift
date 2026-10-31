@@ -3,8 +3,9 @@ import Foundation
 class OperationLogManager: ObservableObject {
     static let shared = OperationLogManager()
 
-    @Published var logs: [LogEntry] = []
+    @Published private(set) var logs: [LogEntry] = []
     private let logQueue = DispatchQueue(label: "com.example.VideoScreenshotExtractor.logQueue")
+    private var logsLoaded = false
 
     struct LogEntry: Identifiable, Codable {
         let id: UUID
@@ -50,11 +51,17 @@ class OperationLogManager: ObservableObject {
     }
 
     private init() {
-        loadLogs()
+        // 现在不在这里加载日志，改为按需加载
+        // loadLogs()
     }
 
     func addLog(_ message: String, level: LogEntry.LogLevel = .info, details: String? = nil) {
         logQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            // 确保日志已加载
+            self.ensureLogsLoaded()
+            
             let entry = LogEntry(
                 timestamp: Date(),
                 level: level,
@@ -63,13 +70,13 @@ class OperationLogManager: ObservableObject {
             )
 
             DispatchQueue.main.async {
-                self?.logs.insert(entry, at: 0)
+                self.logs.insert(entry, at: 0)
 
                 // 保留最近1000条日志
-                if self?.logs.count ?? 0 > 1000 {
-                    self?.logs.removeLast()
+                if self.logs.count > 1000 {
+                    self.logs.removeLast()
                 }
-                self?.saveLogs()
+                self.saveLogs()
             }
         }
     }
@@ -141,22 +148,35 @@ class OperationLogManager: ObservableObject {
         }
     }
 
-    private func loadLogs() {
+    private func ensureLogsLoaded() {
+        guard !logsLoaded else { return }
+        logsLoaded = true
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.logs = self?.loadLogs() ?? []
+        }
+    }
+    
+    private func loadLogs() -> [LogEntry] {
         if let data = UserDefaults.standard.data(forKey: UserDefaults.Keys.videoScreenshotExtractorLogs) {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
 
             if let savedLogs = try? decoder.decode([LogEntry].self, from: data) {
-                logs = savedLogs
+                return savedLogs
             }
         }
+        return []
     }
 
     func clearLogs() {
         logQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.ensureLogsLoaded()
+            
             DispatchQueue.main.async {
-                self?.logs.removeAll()
-                self?.saveLogs()
+                self.logs.removeAll()
+                self.saveLogs()
             }
         }
     }

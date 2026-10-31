@@ -378,3 +378,22 @@
 - **标签**：`ui` `swiftui` `布局约束` `手势`
 - **来源**：bug-report-20260706-crop-resize-canvas-all (Spatial Round 6)
 - **置信度**：high
+
+---
+
+### @ObservedObject 引用单例：避免在 init 中执行耗时磁盘操作
+
+- **场景**：在 Feature View 中使用 `@ObservedObject private var logManager = OperationLogManager.shared` 引用共享单例，并且该单例在 `init()` 中加载大量数据（如从 UserDefaults 读取大量日志）。
+- **根因**：每次切换到该功能时，RootView 都会创建新的 Feature View 实例。如果该视图中存在 `@ObservedObject private var logManager = OperationLogManager.shared`，会导致共享单例的 `init()` 被间接触发。在 `init()` 中执行 `loadLogs()` 或类似磁盘操作会阻塞主线程，造成 UI 卡顿。
+- **规则**：
+  1. **避免在单例 init 中执行磁盘操作**：改为懒加载或在首次访问时加载数据。
+  2. **使用 `ensureLoaded()` 模式**：在单例中添加 `private var loaded = false` 标志，在数据访问方法中检查该标志，如未加载则加载数据。
+  3. **减少不必要的 @ObservedObject 引用**：如果视图不需要观察共享状态的变化，应该通过静态方法访问而不是持有引用。
+  4. **批量截图功能优化方案**：
+     - 修改 `OperationLogManager`：移除 `init()` 中的 `loadLogs()`，改为在 `addLog()` 方法中首次调用时加载。
+     - 移除 `VideoScreenshotExtractorView` 中的 `@ObservedObject private var logManager`，改为直接调用 `OperationLogManager.shared.method()`。
+     - 同理处理其他有类似问题的视图。
+- **例外**：如果视图必须观察共享状态的变化（如实时显示日志更新），可以保留 `@ObservedObject`，但必须确保单例的初始化不会阻塞主线程。
+- **来源**：2026-10-31 批量截图页点击卡顿问题（`VideoScreenshotExtractorView`、`MediaRepairView`）
+- **置信度**：high
+- **标签**：`ui` `性能` `初始化` `disk-io`

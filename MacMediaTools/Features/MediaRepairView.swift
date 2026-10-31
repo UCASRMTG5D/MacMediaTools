@@ -4,8 +4,6 @@ import SwiftUI
 
 struct MediaRepairView: View {
 	@ObservedObject var mediaRepair: MediaRepairModel
-	/// 订阅共享日志，日志更新时自动刷新 UI
-	@ObservedObject private var logManager = OperationLogManager.shared
 
 	/// 每页条目数（默认 10）
 	@State private var pageSize: Int = 10

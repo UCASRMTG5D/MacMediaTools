@@ -67,8 +67,7 @@ struct VideoScreenshotExtractorView: View {
         return filterMode.frames(from: result)
     }
 
-    // 操作日志
-    @ObservedObject private var logManager = OperationLogManager.shared
+    // 不再直接持有logManager引用，改为通过静态方法访问
     @State private var playbackEndObserver: NSObjectProtocol?
 
     var body: some View {
@@ -545,7 +544,7 @@ VStack(alignment: .leading, spacing: 8) {
                 previewPlayer = AVPlayer(url: url)
                 previewPlayer?.actionAtItemEnd = .pause
 
-                logManager.logVideoInfo(url: url, metadata: metadata)
+                OperationLogManager.shared.logVideoInfo(url: url, metadata: metadata)
             }
         } catch {
             await MainActor.run {
@@ -690,7 +689,7 @@ VStack(alignment: .leading, spacing: 8) {
             duplicateThreshold: duplicateThreshold
         )
 
-        logManager.logExtractionSettings(
+        OperationLogManager.shared.logExtractionSettings(
             startTime: startTime,
             endTime: endTime,
             interval: interval
@@ -708,7 +707,7 @@ VStack(alignment: .leading, spacing: 8) {
                         self.statusMessage = progressInfo.status
                         self.estimatedRemainingTime = progressInfo.estimatedRemainingTime
 
-                        logManager.logExtractionProgress(
+                        OperationLogManager.shared.logExtractionProgress(
                             current: progressInfo.current,
                             total: progressInfo.total
                         )
@@ -723,7 +722,7 @@ VStack(alignment: .leading, spacing: 8) {
                 self.filterMode = .all
                 self.isProcessing = false
 
-                logManager.logExtractionComplete(
+                OperationLogManager.shared.logExtractionComplete(
                     frameCount: result.allFrames.count,
                     duration: 0
                 )
@@ -736,7 +735,7 @@ VStack(alignment: .leading, spacing: 8) {
                 self.errorMessage = error.localizedDescription
                 self.showError = true
 
-                logManager.logError(error)
+                OperationLogManager.shared.logError(error)
             }
         }
     }
@@ -772,7 +771,7 @@ VStack(alignment: .leading, spacing: 8) {
                     // Use the resolved directory path for showing in Finder
                     saveSuccessPath = saveDir.path
                     showSaveSuccess = true
-                    logManager.logExtractionComplete(frameCount: savedURLs.count, duration: 0)
+                    OperationLogManager.shared.logExtractionComplete(frameCount: savedURLs.count, duration: 0)
                 }
             } catch {
                 await MainActor.run {
