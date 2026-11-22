@@ -6,7 +6,7 @@
 > 修改代码前读这里即可掌握：功能全貌、代码地图、状态归属、UI/算法/文件 IO 约定、构建安装标准和历史踩坑，不必通读整个 App。
 > **强制规则：任何改动完成后都必须同步更新本文件对应章节**（见文末「文档维护规则」）。
 
-最后更新：2026-10-31
+最后更新：2026-11-22
 
 ---
 
@@ -109,7 +109,8 @@ xed .                 # 用 Xcode 打开工程
 - 列表展示文件名与分辨率；默认输出分辨率取所有视频宽高的最大值。
 - 分辨率不一致时：小于输出尺寸的居中加黑边，大于的裁掉边缘、保留中心。
 - 支持手动指定输出宽高；导出 MP4。
-- 实现：`VideoToolkit.exportConcatenated` + `AVMutableComposition`。
+- **输出位置**：点击「开始拼接」后用系统保存面板确认目标文件；编码在 App 沙盒临时目录完成，再由 App 移动到目标，避免直接写未授权目录导致 `NSCocoaErrorDomain 513`。
+- 实现：`VideoToolkit.exportConcatenated` + `AVMutableComposition`；临时编码后移动由 `exportConcatenated` 内部处理。
 
 ### 3) 音视频处理
 
@@ -300,7 +301,6 @@ Service 层（actor / static enum / Observable 模型）
 | Key | 使用方 |
 |-----|--------|
 | `VideoCropResizeOutputFolder` | 宽高调整输出目录 |
-| `VideoConcatOutputFolder` | 视频拼接输出目录 |
 | `VideoScreenshotExtractorOutputDirectory` | 批量截图输出目录 |
 | `SpatialCanvasOutputFolder` | 画幅拼接输出目录 |
 

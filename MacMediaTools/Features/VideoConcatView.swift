@@ -116,17 +116,9 @@ struct VideoConcatView: View {
 
 			Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
 				GridRow {
-					Text("输出目录")
+					Text("输出位置")
 					HStack {
-                    OpenPanelButton(title: "选择目录…", mode: .folder) { urls in
-                        if let url = urls.first {
-                            outputFolder = url
-                            Task {
-                                await SecurityBookmarkStore.shared.saveBookmark(for: url, key: "VideoConcatOutputFolder")
-                            }
-                        }
-                    }
-						Text(outputFolder?.path ?? "(默认：第1个视频同目录)")
+						Text(outputFolder?.path ?? "(开始拼接时用系统保存面板选择)")
 							.lineLimit(1)
 							.truncationMode(.middle)
 					}
@@ -143,6 +135,7 @@ struct VideoConcatView: View {
 
 			HStack(spacing: 12) {
 				Button(isWorking ? "拼接中…" : "开始拼接") {
+					guard let destination = chooseOutputURL() else { return }
 					Task {
 						guard await WorkManager.shared.requestStart(.videoConcat) else { return }
 						isWorking = true
@@ -150,7 +143,7 @@ struct VideoConcatView: View {
 							isWorking = false
 							WorkManager.shared.finishWork(.videoConcat)
 						}
-						await run()
+						await run(destination: destination)
 					}
 				}
 				.disabled(isWorking || isLoading || videos.count < 2)
@@ -325,11 +318,27 @@ struct VideoConcatView: View {
 		recalcMaxSize()
 	}
 
-	private func buildOutputURL() -> URL? {
-		guard let first = videos.first else { return nil }
-		let folder = outputFolder ?? first.deletingLastPathComponent()
-		let name = outputFileName.isEmpty ? "merged_1.mp4" : outputFileName
-		return folder.appendingPathComponent(name)
+	@MainActor
+	private func chooseOutputURL() -> URL? {
+		let panel = NSSavePanel()
+		panel.title = "保存拼接视频"
+		panel.prompt = "保存"
+		panel.message = "请选择拼接视频的保存位置"
+		panel.allowedContentTypes = [.mpeg4Movie]
+		panel.canCreateDirectories = true
+		panel.isExtensionHidden = false
+
+		let trimmedName = outputFileName.trimmingCharacters(in: .whitespacesAndNewlines)
+		let name = trimmedName.isEmpty ? "merged_1.mp4" : trimmedName
+		panel.nameFieldStringValue = name.lowercased().hasSuffix(".mp4") ? name : "\(name).mp4"
+		if let folder = outputFolder ?? videos.first?.deletingLastPathComponent() {
+			panel.directoryURL = folder
+		}
+
+		guard panel.runModal() == .OK, let url = panel.url else { return nil }
+		outputFolder = url.deletingLastPathComponent()
+		outputFileName = url.lastPathComponent
+		return url
 	}
 
 	private var effectiveTargetSize: CGSize? {
@@ -338,33 +347,23 @@ struct VideoConcatView: View {
 		return CGSize(width: w, height: h)
 	}
 
-    @MainActor
-    private func run() async {
-        guard let outURL = buildOutputURL() else { return }
-        isWorking = true
-        errorMessage = nil
-        lastOutputURL = nil
-        defer { isWorking = false }
+	@MainActor
+	private func run(destination: URL) async {
+		errorMessage = nil
+		lastOutputURL = nil
 
-        let folder = outURL.deletingLastPathComponent()
-        let started = SecurityBookmarkStore.shared.startAccessing(folder)
-        defer {
-            if started {
-                SecurityBookmarkStore.shared.stopAccessing(folder)
-            }
-        }
-
-        do {
-            try await VideoToolkit.exportConcatenated(
-                inputURLs: videos,
-                outputURL: outURL,
-                targetSize: effectiveTargetSize
-            )
-            lastOutputURL = outURL
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
+		do {
+			try await VideoToolkit.exportConcatenated(
+				inputURLs: videos,
+				outputURL: destination,
+				targetSize: effectiveTargetSize
+			)
+			lastOutputURL = destination
+		} catch {
+			let nsError = error as NSError
+			errorMessage = "\(error.localizedDescription)（\(nsError.domain) \(nsError.code)）"
+		}
+	}
 
 	private func deleteAllSourceFiles() {
 		let urls = videos

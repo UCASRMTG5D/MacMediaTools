@@ -326,11 +326,30 @@ enum VideoToolkit {
 		videoComposition.renderSize = renderSize
 		videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
 
+		// AVFoundation 的导出辅助进程不能可靠继承保存面板授予的目录权限。
+		// 先在 App 沙盒临时目录完成编码，再由 App 进程移动用户确认的目标文件。
+		let temporaryURL = FileManager.default.temporaryDirectory
+			.appendingPathComponent("concat-\(UUID().uuidString).mp4")
+		defer { try? FileManager.default.removeItem(at: temporaryURL) }
+
 		try await export(
 			asset: composition,
-			outputURL: outputURL,
+			outputURL: temporaryURL,
 			videoComposition: videoComposition
 		)
+
+		do {
+			if FileManager.default.fileExists(atPath: outputURL.path) {
+				// NSSavePanel 已让用户确认覆盖。
+				try FileManager.default.removeItem(at: outputURL)
+			}
+			try FileManager.default.moveItem(at: temporaryURL, to: outputURL)
+		} catch {
+			let nsError = error as NSError
+			throw VideoToolkitError.exportFailed(
+				"无法保存到“\(outputURL.lastPathComponent)”：\(nsError.localizedDescription)（\(nsError.domain) \(nsError.code)）"
+			)
+		}
 	}
 
 	// MARK: - Image Processing

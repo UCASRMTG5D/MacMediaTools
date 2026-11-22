@@ -3,7 +3,7 @@
 > 从 bug-reports/ 复盘文档中提炼的可复用经验。
 > AI 在写代码前应读取此文件，避免重复踩坑。
 > 每条经验都标注了精确场景、限制条件和置信度。
-> 更新于: 2026-10-31 12:00
+> 更新于: 2026-11-22 14:30
 
 ---
 
@@ -276,6 +276,23 @@
 - **例外**：明确预期是覆盖写入的场景（如缓存更新、临时文件刷新、日志轮转）不需要此检查。
 - **来源**：bug-report-20260702-184520-screenshot-count-mismatch
 - **置信度**：high
+
+---
+
+### 沙盒导出：源文件授权不等于源目录写权限
+
+- **场景**：App Sandbox 应用中，用户通过 `NSOpenPanel` 选择源视频，导出时默认把结果写到「第 1 个源视频所在目录」，并在导出前对目录调用 `startAccessingSecurityScopedResource()`。视频拼接、裁剪导出等所有“默认与源文件同目录”的写盘逻辑都可能触发。
+- **根因**：打开面板授予的是**源文件**的安全范围扩展，不会自动授予其父目录的写权限。由 `video.deletingLastPathComponent()` 推导出的目录不是安全范围 URL，`startAccessingSecurityScopedResource()` 返回 `false`；随后 `AVAssetExportSession`/`FileManager` 写入被拒，底层为 `NSCocoaErrorDomain 513`，本地化文案正是「未能保存该文件，因为你没有权限」。该错误容易被误判为缺少 Downloads/用户选择目录 entitlement，但增加 entitlement 或目录书签都不能修复“未选择过的源目录”。
+- **规则**：
+  1. 输出目标必须由 `NSSavePanel`（文件级）或用户明确选择的输出目录 `NSOpenPanel`（目录级）产生，禁止从源文件路径推导后直接写入。
+  2. 在沙盒中优先让 `AVAssetExportSession` 写入 `FileManager.default.temporaryDirectory`（App 容器内），成功后再由 App 进程移动到用户确认的目标文件；避免导出辅助进程直接写用户目录。
+  3. 目标已存在时，只有保存面板已完成覆盖确认才允许删除/替换。
+  4. 回归验证必须使用**带相同 entitlements 签名的 .app**；裸命令行进程不受 App Sandbox 限制，无法复现此错误。
+- **例外**：App 已通过 `NSOpenPanel` 明确选择输出目录，并在导出期间持有该目录的安全范围访问；此时可直接写该目录，但仍需处理同名覆盖确认。
+- **排查提示**：在沙盒 App 中用 `#filePath` 拼相对路径会以容器目录为当前目录，导致源文件读取 `-17913` 假象；测试输入应使用容器内绝对路径。
+- **来源**：2026-11-22 视频拼接导出权限修复
+- **置信度**：high
+- **标签**：`file-io` `media-processing` `avfoundation` `app-sandbox` `security-scope`
 
 ---
 
